@@ -1,0 +1,16 @@
+# Ignore compiled python files
+*.pyc
+
+# Ignore AVSpeech csv's due to size
+avspeech_test.csv
+avspeech_train.csv
+
+# Ignore downloaded AVSpeech data also
+*.wav
+*.mp4
+*.jpg
+
+# Ignore output files and databases
+valid_frame.txt
+*.h5
+*.npy
