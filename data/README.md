@@ -11,19 +11,17 @@ Following are the steps to generate training and testing data.  There are severa
 
 ## Step 2 - Download audio and video data
 
-1.  Open **data/download_dataset.py** 
+1.  Open **data/download_dataset.py**. Modify the settings to choose the range of the data in AVspeech dataset to download (by changing the **start_id** and **end_id**).
 
-2.  Modify the settings to choose the range of the data in AVspeech dataset to download.
-
-3.  Run the script from the command line:
+2.  Run the script from the command line:
 
     ```python
     python download_dataset.py
     ```
 
-4. Generated audio clips will be found in **data/audio/audio_train/**, and cropped video frames in **data/video/face_input/**.
+3. Generated audio clips will be found in **data/audio/audio_train/**, and cropped video frames in **data/video/face_input/**.
 
-5. The process will also delete the series of frames which are not valid, such as wrong detection or missing frames. Valid frame series are listed in **data/video/valid_frame.txt**.
+4. The process will also delete the series of frames which are not valid, such as wrong detection or missing frames. Valid frame series are listed in **data/video/valid_frame.txt**.
 
 # (Original instructions)
 
