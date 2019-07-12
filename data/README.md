@@ -1,10 +1,10 @@
-# Instruction for generating data
+# Instructions for generating data
 
-Taken (and adapted) from https://github.com/bill9800/speech_separation/tree/master/data
+Taken (and adapted) from: https://github.com/bill9800/speech_separation/tree/master/data
 
-Following are the steps to generate training and testing data.  There are several parameters to change in order to match different purpose. 
+Below are the steps for generating training and testing data.  There are several parameters to change in order to match different purpose. 
 
-## Step 1 - Setting log files
+## Step 1 - Get a list of the AVSpeech files
 
 1. Get into **data/audio/catalog** and download **avspeech_train.csv** and **avspeech_test.csv** from [AVspeech](https://looking-to-listen.github.io/avspeech/download.html)
 2. Add **link,start_time,end_time,pos_x,pos_y** to the head of the csv files. (for pandas) 
