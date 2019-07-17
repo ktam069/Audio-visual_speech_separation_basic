@@ -27,10 +27,6 @@ normalise_data = True
 
 # ====================
 
-# Length of datasets
-train_data_max_len = 2621845
-test_data_max_len = 183273
-
 def process_audio():
 	# Download and trim audio wav files from youtube
 	if dl_from_training:

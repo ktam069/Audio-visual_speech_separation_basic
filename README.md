@@ -1,5 +1,5 @@
 # Description
-Basic version of the implementation for Part IV Project #80.
+Basic version of the implementation for Part IV Project #80. Commands are adpated to be run on windows.
 
 # Dependencies
 
@@ -13,15 +13,25 @@ Tensorflow
 
 youtube-dl
 
-ffmpeg
-
 pytest
 
+sox
+
 **download separately:**
+
+ffmpeg
 
 cmake
 
 ...and more
+
+Ensure that the following are in your system path environment variables:
+
+...\Python\Scripts
+
+...\ffmpeg\bin
+
+...\sox
 
 # Instructions for Running
 

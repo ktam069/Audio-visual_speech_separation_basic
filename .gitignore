@@ -14,3 +14,4 @@ avspeech_train.csv
 valid_frame.txt
 *.h5
 *.npy
+data/audio/AV_model_database/*
