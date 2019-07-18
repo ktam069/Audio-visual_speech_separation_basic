@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 import librosa
 
 import tensorflow as tf
-# from keras.layers import Input, Dense, Convolution2D, Deconvolution2D, Bidirectional, TimeDistributed
-from keras.layers import Input, Dense, Convolution2D
+from keras.models import Sequential
+from keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional
+from keras.layers import BatchNormalization, Activation
 
 
 import scipy
@@ -149,18 +150,7 @@ def power_law_encode(data, power=0.3):
 def power_law_decode(data, power=0.3):
 	return power_law_encode(data, power=1.0/power)
 
-def main():
-	plt.figure(figsize=(20, 10))
-	plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.2)
-	
-	# print("time:", time.time()-start_time)
-	data = load_data()
-	# print("time:", time.time()-start_time)
-	data = convert_to_scalars(data)
-	# data = power_law_encode(data)
-	# data = power_law_decode(data)
-	# print("time:", time.time()-start_time)
-	
+def visualise_data(data):
 	# Visualise data components
 	plt.clf()
 	x = lambda a: 'Real' if a==0 else 'Imaginary'
@@ -179,6 +169,137 @@ def main():
 	plt.ylabel('Frequency [Hz]')
 	plt.xlabel('Time [sec]')
 	plt.show()
+
+def convolution_model(data):
+	assert data.shape == (298, 257, 2), "Please check if the input shape is correct"
+	
+	# == Audio convolution layers ==
+	
+	model = Sequential()
+	
+	# # Implicit input layer
+	# inputs = Input(shape=(298, 257, 2))
+	# model.add(inputs)
+	
+	# Convolution layers
+	conv1 = Conv2D(96, kernel_size=(1,7), dilation_rate=(1,1), input_shape=(298, 257, 2, 1))
+	model.add(conv1)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv2 = Conv2D(96, kernel_size=(7,1), dilation_rate=(1,1))
+	model.add(conv2)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv3 = Conv2D(96, kernel_size=(5,5), dilation_rate=(1,1))
+	model.add(conv3)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv4 = Conv2D(96, kernel_size=(5,5), dilation_rate=(2,1))
+	model.add(conv4)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv5 = Conv2D(96, kernel_size=(5,5), dilation_rate=(4,1))
+	model.add(conv5)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv6 = Conv2D(96, kernel_size=(5,5), dilation_rate=(8,1))
+	model.add(conv6)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv7 = Conv2D(96, kernel_size=(5,5), dilation_rate=(16,1))
+	model.add(conv7)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv8 = Conv2D(96, kernel_size=(5,5), dilation_rate=(32,1))
+	model.add(conv8)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv9 = Conv2D(96, kernel_size=(5,5), dilation_rate=(1,1))
+	model.add(conv9)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	conv10 = Conv2D(8, kernel_size=(5,5), dilation_rate=(2,2))
+	model.add(conv10)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
+	
+	# conv11 = Conv2D(96, kernel_size=(5,5), dilation_rate=(4,4))
+	# model.add(conv11)
+	# model.add(BatchNormalization())
+	# model.add(Activation("relu"))
+	
+	# conv12 = Conv2D(96, kernel_size=(5,5), dilation_rate=(8,8))
+	# model.add(conv12)
+	# model.add(BatchNormalization())
+	# model.add(Activation("relu"))
+	
+	# conv13 = Conv2D(96, kernel_size=(5,5), dilation_rate=(16,16))
+	# model.add(conv13)
+	# model.add(BatchNormalization())
+	# model.add(Activation("relu"))
+	
+	# conv14 = Conv2D(96, kernel_size=(5,5), dilation_rate=(32,32))
+	# model.add(conv14)
+	# model.add(BatchNormalization())
+	# model.add(Activation("relu"))
+	
+	# conv15 = Conv2D(96, kernel_size=(1,1), dilation_rate=(1,1))
+	# model.add(conv15)
+	# model.add(BatchNormalization())
+	# model.add(Activation("sigmoid"))
+	
+	for layer in model.layers:
+		print(layer.output_shape)
+
+'''
+Expected:
+1: (?, 298, 257, 96)
+2: (?, 298, 257, 96)
+3: (?, 298, 257, 96)
+4: (?, 298, 257, 96)
+5: (?, 298, 257, 96)
+6: (?, 298, 257, 96)
+7: (?, 298, 257, 96)
+8: (?, 298, 257, 96)
+9: (?, 298, 257, 96)
+10: (?, 298, 257, 96)
+11: (?, 298, 257, 96)
+12: (?, 298, 257, 96)
+13: (?, 298, 257, 96)
+14: (?, 298, 257, 96)
+15: (?, 298, 257, 8)
+AVfusion: (?, 298, 2056)
+lstm: (?, ?, 400)
+fc1: (?, 298, 600)
+fc2: (?, 298, 600)
+fc3: (?, 298, 600)
+complex_mask: (?, 298, 1028)
+complex_mask_out: (?, 298, 257, 2, 2)
+'''
+
+def main():
+	plt.figure(figsize=(20, 10))
+	plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.2)
+	
+	data = load_data()
+	data = convert_to_scalars(data)
+	# data = power_law_encode(data)
+	# data = power_law_decode(data)
+	print(data.shape)
+	print(data)
+	
+	# visualise_data(data)
+	
+	convolution_model(data)
 	
 if __name__ == '__main__':
 	main()

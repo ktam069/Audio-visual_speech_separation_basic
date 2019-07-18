@@ -76,8 +76,7 @@ def load_data():
 	fig_w = 3
 	fig_no = 1
 
-	data_num = 1
-	# with open()	
+	data_num = 8	
 	
 	# ==================================
 	print("\n\n==================================\n*.npy\n")
