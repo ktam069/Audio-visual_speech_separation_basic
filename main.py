@@ -9,8 +9,9 @@ import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional
 from keras.layers import BatchNormalization, Activation, Flatten, TimeDistributed, Reshape
+from keras.callbacks import ModelCheckpoint
 
-# import os
+import os
 # import sys
 
 # ===== Settings =====
@@ -21,7 +22,7 @@ DISPLAY_GRAPHS = False
 
 # Range of data to use for training (excludes END_ID)
 START_ID = 0
-END_ID = 3
+END_ID = 21
 
 # Sampling rate
 SAMPLING_RATE = 16000
@@ -35,6 +36,7 @@ path_to_data_audio = "./data/audio/audio_train/"
 path_to_data_video = "./data/video/face_input/"
 
 # audio_data_name = "trim_audio_train%d.wav"
+# dataset_filepath = "./data_train/"+"dataset_train_%d-%d.npy"%(START_ID,END_ID-1)
 
 # ====================
 
@@ -79,7 +81,7 @@ def dataset_to_spectrograms(dataset):
 	dataset_specs = np.zeros((dataset.shape[0], 298, 257, 2, dataset.shape[1]))
 	
 	for i in range(len(dataset)):
-		print("\tConverting audio data %d/%d to spectrogram..."%(i,len(dataset)), end='\r', flush=True)
+		print("\tConverting audio data %d/%d to spectrogram..."%(i+1,len(dataset)), end='\r', flush=True)
 		
 		# Convert the data array into a spectrogram
 		for j in range(dataset.shape[1]):
@@ -253,8 +255,13 @@ def train_model(x_train, y_train, num_speakers=2):
 	pass
 	# x_train, y_train, x_test, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 	
+	# Create checkpoints when training model (save models to file)
+	filepath = path_to_models + "basic-ao-{epoch:02d}.hdf5"
+	checkpoint = ModelCheckpoint(filepath, verbose=1, save_best_only=False)
+	callback_list = [checkpoint]
+	
 	# Train the model
-	model.fit(x_train, y_train, batch_size=6, epochs=1)		# TODO: adjust the arguments used
+	model.fit(x_train, y_train, batch_size=6, epochs=10, callbacks=callback_list, verbose=2)		# TODO: adjust the arguments used
 
 def convolution_model(num_speakers=2):
 
@@ -377,10 +384,19 @@ def convolution_model(num_speakers=2):
 
 def main():
 	
-	# Load the data set of AV data, mix, and convert to spectrograms
-	audio_wav = load_data()
-	dataset_wav = generate_dataset(audio_wav)
-	dataset_train = dataset_to_spectrograms(dataset_wav)
+	# Generate data set to use for training
+	filepath = "./data_train/"+"dataset_train_%d-%d.npy"%(START_ID,END_ID-1)
+	if not os.path.exists(filepath):
+		# Load the data set of AV data, mix, and convert to spectrograms
+		audio_wav = load_data()
+		dataset_wav = generate_dataset(audio_wav)
+		dataset_train = dataset_to_spectrograms(dataset_wav)
+		
+		np.save(filepath, dataset_train)
+	else:
+		# Use existing generated data set
+		print("Loading data set from file:", filepath)
+		dataset_train = np.load(filepath)
 	
 	# Split dataset into inputs and ground truths
 	x_train = dataset_train[:,:,:,:,0 ]
