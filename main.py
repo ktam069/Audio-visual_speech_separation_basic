@@ -8,7 +8,7 @@ import librosa
 import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional
-from keras.layers import BatchNormalization, Activation
+from keras.layers import BatchNormalization, Activation, Flatten, TimeDistributed, Reshape
 
 
 import scipy
@@ -170,7 +170,18 @@ def visualise_data(data):
 	plt.xlabel('Time [sec]')
 	plt.show()
 
-def convolution_model(data):
+def train_model(data, num_speakers=2):
+	# Create a compiled model
+	model = convolution_model(data)
+	
+	# Process training data
+	pass
+	# x_train, y_train, x_test, y_test = 
+	
+	# Train the model
+	model.fit(x_train, y_train, batch_size=6, epochs=1)		# TODO: adjust the arguments used
+
+def convolution_model(data, num_speakers=2):
 	assert data.shape == (298, 257, 2), "Please check if the input shape is correct"
 	
 	# == Audio convolution layers ==
@@ -182,109 +193,111 @@ def convolution_model(data):
 	# model.add(inputs)
 	
 	# Convolution layers
-	conv1 = Conv2D(96, kernel_size=(1,7), dilation_rate=(1,1), input_shape=(298, 257, 2, 1))
+	conv1 = Conv2D(96, kernel_size=(1,7), padding='same', dilation_rate=(1,1), input_shape=(298, 257, 2))
 	model.add(conv1)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv2 = Conv2D(96, kernel_size=(7,1), dilation_rate=(1,1))
+	conv2 = Conv2D(96, kernel_size=(7,1), padding='same', dilation_rate=(1,1))
 	model.add(conv2)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv3 = Conv2D(96, kernel_size=(5,5), dilation_rate=(1,1))
+	conv3 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(1,1))
 	model.add(conv3)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv4 = Conv2D(96, kernel_size=(5,5), dilation_rate=(2,1))
+	conv4 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(2,1))
 	model.add(conv4)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv5 = Conv2D(96, kernel_size=(5,5), dilation_rate=(4,1))
+	conv5 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(4,1))
 	model.add(conv5)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv6 = Conv2D(96, kernel_size=(5,5), dilation_rate=(8,1))
+	conv6 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(8,1))
 	model.add(conv6)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv7 = Conv2D(96, kernel_size=(5,5), dilation_rate=(16,1))
+	conv7 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(16,1))
 	model.add(conv7)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv8 = Conv2D(96, kernel_size=(5,5), dilation_rate=(32,1))
+	conv8 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(32,1))
 	model.add(conv8)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv9 = Conv2D(96, kernel_size=(5,5), dilation_rate=(1,1))
+	conv9 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(1,1))
 	model.add(conv9)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	conv10 = Conv2D(8, kernel_size=(5,5), dilation_rate=(2,2))
+	conv10 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(2,2))
 	model.add(conv10)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
-	# conv11 = Conv2D(96, kernel_size=(5,5), dilation_rate=(4,4))
-	# model.add(conv11)
-	# model.add(BatchNormalization())
-	# model.add(Activation("relu"))
+	conv11 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(4,4))
+	model.add(conv11)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
 	
-	# conv12 = Conv2D(96, kernel_size=(5,5), dilation_rate=(8,8))
-	# model.add(conv12)
-	# model.add(BatchNormalization())
-	# model.add(Activation("relu"))
+	conv12 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(8,8))
+	model.add(conv12)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
 	
-	# conv13 = Conv2D(96, kernel_size=(5,5), dilation_rate=(16,16))
-	# model.add(conv13)
-	# model.add(BatchNormalization())
-	# model.add(Activation("relu"))
+	conv13 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(16,16))
+	model.add(conv13)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
 	
-	# conv14 = Conv2D(96, kernel_size=(5,5), dilation_rate=(32,32))
-	# model.add(conv14)
-	# model.add(BatchNormalization())
-	# model.add(Activation("relu"))
+	conv14 = Conv2D(96, kernel_size=(5,5), padding='same', dilation_rate=(32,32))
+	model.add(conv14)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
 	
-	# conv15 = Conv2D(96, kernel_size=(1,1), dilation_rate=(1,1))
-	# model.add(conv15)
-	# model.add(BatchNormalization())
-	# model.add(Activation("sigmoid"))
+	conv15 = Conv2D(8, kernel_size=(1,1), padding='same', dilation_rate=(1,1))
+	model.add(conv15)
+	model.add(BatchNormalization())
+	model.add(Activation("relu"))
 	
+	# AV fusion step(s)
+	model.add(TimeDistributed(Flatten()))
+	
+	# BLSTM
+	new_matrix_length = 400
+	model.add(Bidirectional(LSTM(new_matrix_length//2, return_sequences=True, input_shape=(298, 257*8))))
+	
+	# Fully connected layers
+	model.add(Dense(600, activation="relu"))
+	model.add(Dense(600, activation="relu"))
+	model.add(Dense(600, activation="relu"))
+	
+	# Output layer (i.e. complex masks)
+	outputs = Dense(257*2*num_speakers, activation="relu")
+	model.add(outputs)
+	outputs_complex_masks = Reshape((298, 257, 2, num_speakers))
+	model.add(outputs_complex_masks)
+	
+	# Print the output shapes of each model layer
 	for layer in model.layers:
-		print(layer.output_shape)
-
-'''
-Expected:
-1: (?, 298, 257, 96)
-2: (?, 298, 257, 96)
-3: (?, 298, 257, 96)
-4: (?, 298, 257, 96)
-5: (?, 298, 257, 96)
-6: (?, 298, 257, 96)
-7: (?, 298, 257, 96)
-8: (?, 298, 257, 96)
-9: (?, 298, 257, 96)
-10: (?, 298, 257, 96)
-11: (?, 298, 257, 96)
-12: (?, 298, 257, 96)
-13: (?, 298, 257, 96)
-14: (?, 298, 257, 96)
-15: (?, 298, 257, 8)
-AVfusion: (?, 298, 2056)
-lstm: (?, ?, 400)
-fc1: (?, 298, 600)
-fc2: (?, 298, 600)
-fc3: (?, 298, 600)
-complex_mask: (?, 298, 1028)
-complex_mask_out: (?, 298, 257, 2, 2)
-'''
+		name = layer.get_config()["name"]
+		if "batch_normal" in name or "activation" in name:
+			continue
+		print(layer.output_shape, name)
+	
+	# Compile the model before training
+	model.compile(optimizer='adam', loss='mse')
+	# model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+	
+	return model
 
 def main():
 	plt.figure(figsize=(20, 10))
@@ -300,6 +313,8 @@ def main():
 	# visualise_data(data)
 	
 	convolution_model(data)
+	
+	# train_model(data)
 	
 if __name__ == '__main__':
 	main()

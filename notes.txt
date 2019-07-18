@@ -3,7 +3,9 @@ Needs checking:
 2) Power-law compression? - as above, not sure about the formula (mu-law??)
 3) Double check that input audio are indeed mono (by taking the left channel if stereo)
 4) Convolution network - padding valid vs same? ; 'Context' in the table in the paper??
-5) 
+5) LSTM settings; Bidirectional merge_mode
+6) Reshape tuple ordering correct? (position of num_speakers)
+
 
 To be completed:
 1) Dependencies list in readme may not be complete - but not too important atm
