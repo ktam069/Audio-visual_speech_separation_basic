@@ -21,7 +21,7 @@ DISPLAY_GRAPHS = False
 
 # Range of data to use for training (excludes END_ID)
 START_ID = 0
-END_ID = 21
+END_ID = 3
 
 # Sampling rate
 SAMPLING_RATE = 16000
@@ -39,7 +39,7 @@ path_to_data_video = "./data/video/face_input/"
 # ====================
 
 def load_data():
-	data_train = []
+	audio_dataset = []
 	print("Loading data files %d to %d..."%(START_ID,END_ID-1))
 		
 	for data_num in range(START_ID, END_ID):
@@ -50,15 +50,43 @@ def load_data():
 		if data is None:
 			continue
 		
-		# Convert the array into a spectrogram
-		data = wav_to_spectrogram(data)
+		# Convert the array into a spectrogram - for visualisation only
 		if DISPLAY_GRAPHS:
-			visualise_data(data)
+			data_tmp = wav_to_spectrogram(data)
+			visualise_data(data_tmp)
 		
-		# Add data point to training set
-		data_train.append(data)
+		# Add data point to clean audio data set
+		audio_dataset.append(data)
 	
-	return data_train
+	print()
+	return audio_dataset
+
+def generate_dataset(clean_audio_dataset):
+	# Generate a data set of mixed audio inputs (x) and corresponding clean audio outputs (y)
+	dataset = []
+	
+	for i in range(len(clean_audio_dataset)):
+		for j in range(i, len(clean_audio_dataset)):
+			# Mix audio for 2 speakers (no noise)
+			mixed_audio = clean_audio_dataset[i] + clean_audio_dataset[j]
+			
+			# Add data point to data set
+			dataset.append([mixed_audio, clean_audio_dataset[i], clean_audio_dataset[j]])
+	
+	return np.array(dataset)
+
+def dataset_to_spectrograms(dataset):
+	dataset_specs = np.zeros((dataset.shape[0], 298, 257, 2, dataset.shape[1]))
+	
+	for i in range(len(dataset)):
+		print("\tConverting audio data %d/%d to spectrogram..."%(i,len(dataset)), end='\r', flush=True)
+		
+		# Convert the data array into a spectrogram
+		for j in range(dataset.shape[1]):
+			dataset_specs[i,:,:,:,j] = wav_to_spectrogram(dataset[i,j,:])
+	
+	print()
+	return dataset_specs
 
 def load_wav(data_num):
 	try:
@@ -215,15 +243,15 @@ def visualise_data(data):
 	plt.xlabel('Time [sec]')
 	plt.show()
 
-def train_model(data, num_speakers=2):
-	assert data.shape == (298, 257, 2), "Please check if the input shape is correct - expected (298, 257, 2)"
+def train_model(x_train, y_train, num_speakers=2):
+	assert x_train[0].shape == (298, 257, 2), "Data shape is incorrect - expected (298, 257, 2), got "+str(x_train[0].shape)
 	
 	# Create a compiled model
 	model = convolution_model()
 	
 	# Process training data
 	pass
-	# x_train, y_train, x_test, y_test = 
+	# x_train, y_train, x_test, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 	
 	# Train the model
 	model.fit(x_train, y_train, batch_size=6, epochs=1)		# TODO: adjust the arguments used
@@ -349,11 +377,17 @@ def convolution_model(num_speakers=2):
 
 def main():
 	
-	data = load_data()
+	# Load the data set of AV data, mix, and convert to spectrograms
+	audio_wav = load_data()
+	dataset_wav = generate_dataset(audio_wav)
+	dataset_train = dataset_to_spectrograms(dataset_wav)
 	
-	model = convolution_model()
+	# Split dataset into inputs and ground truths
+	x_train = dataset_train[:,:,:,:,0 ]
+	y_train = dataset_train[:,:,:,:,1:]
 	
-	# train_model(data)
+	# Build and train the neural network
+	train_model(x_train, y_train)
 	
 if __name__ == '__main__':
 	main()

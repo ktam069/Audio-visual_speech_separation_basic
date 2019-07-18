@@ -5,7 +5,8 @@ Needs checking:
 4) Convolution network - padding valid vs same? ; 'Context' in the table in the paper??
 5) LSTM settings; Bidirectional merge_mode
 6) Reshape tuple ordering correct? (position of num_speakers)
-
+7) Can spectrograms be combined directly (instead of wav files)? Even after power law compression?
+8) Include permutation variations when mixing audio to create the dataset?
 
 To be completed:
 1) Dependencies list in readme may not be complete - but not too important atm
