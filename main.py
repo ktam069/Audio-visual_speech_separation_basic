@@ -1,4 +1,4 @@
-# Main program
+# Main program - Part IV Project 80 Basic Version
 
 import pandas as pd
 import numpy as np
@@ -10,61 +10,55 @@ from keras.models import Sequential
 from keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional
 from keras.layers import BatchNormalization, Activation, Flatten, TimeDistributed, Reshape
 
-
-import scipy
-import math
-
-import time
-
-start_time = time.time()
-
 # import os
 # import sys
 
-# sys.path.append("./audio")
-# sys.path.append("./video")
-
-# from build_audio_database_v2 import build_database
-
 # ===== Settings =====
 
-# Filepaths to the locations where information was saved
+# Filepaths to the locations for saved data and models
+
 path_to_data = "./data/"
 path_to_models = "./saved_models/"
 
-path_to_data_audio = "./data/audio/AV_model_database/single/"
-# path_to_data_audio = "./data/audio/audio_train/"
-path_to_data_video = "./data/video/face_emb/"
-# path_to_data_video = "./data/video/face_input/"
+path_to_data_audio = "./data/audio/audio_train/"
+path_to_data_video = "./data/video/face_input/"
 
+# audio_data_name = "trim_audio_train%d.wav"
+
+# Plot display settings
+plt.figure(figsize=(20, 10))
+plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.2)
 
 # ====================
 
-def load_data():
+def load_wav():
+	# File number of audio data to be loaded
 	data_num = 1
 	
-	# ==================================
-	print("\n\n==================================\nwav file\n")
+	# Filepath of audio file to be loaded
+	path = path_to_data_audio + "trim_audio_train%d.wav"%data_num
 	
+	# Sampling rate
 	sr = 16000
-	path = "./data/audio/audio_train/" + "trim_audio_train%d.wav"%data_num
+	
+	# Load wav file into an array (an ndarray)
 	data, _ = librosa.load(path, sr=sr)
 	
+	print("\nData after loading:")
 	print(data.shape)
+	print(data)
 	
-	# ==================================
-	print("\n\n==================================\ntf stft\n")
-	
-	data, _ = librosa.load(path, sr=sr)
+	return data
 
+def wav_to_spectrogram(data):
+	
+	# == STFT ==
+
+	# Data padding??...may not be needed (TODO)
 	length = len(data)
-	new_power_base_2 = np.ceil(np.log(length)/np.log(2))
-	new_len = pow(2, int(new_power_base_2))
-	
-	# new_len = length	# = 48192 ??
+	# new_power_base_2 = np.ceil(np.log(length)/np.log(2))
+	# new_len = pow(2, int(new_power_base_2))
 	new_len = 48192 - 512
-	
-	print(length, new_power_base_2, new_len)
 	
 	if new_len > length:
 		new_data = np.zeros(new_len)
@@ -76,17 +70,14 @@ def load_data():
 		
 	# Calculations taken from https://github.com/tensorflow/tensorflow/issues/24620
 	sample_rate = 16000 #16kHz
-	# segment_size = 3000 #ms
 	window_size_ms = 25
 	window_stride_ms = 10
-	# segment_size_samples = int(sample_rate * segment_size / 1000)
 	window_size_samples = int(sample_rate * window_size_ms / 1000)
 	window_stride_samples = int(sample_rate * window_stride_ms / 1000)
 	
-	segment_size_samples = len(data)
 	window_size_samples = 512
 	
-	print("segment_size_samples", segment_size_samples)
+	print("segment_size_samples", len(data))
 	print("window_size_samples", window_size_samples)
 	print("window_stride_samples", window_stride_samples)
 	
@@ -97,24 +88,38 @@ def load_data():
 						   pad_end=True)
 						   # pad_end=False)
 	
-	# data = tf.signal.stft(data, frame_length=512, frame_step=512, fft_length=512,
-				# window_fn=tf.signal.hann_window, pad_end=False, name=None)
+	# data = tf.signal.stft(data, frame_length=512, frame_step=160, fft_length=512,
+				# window_fn=tf.signal.hann_window, pad_end=False)
 		
 	data = tf.Session().run(data)
+	
+	print("\nData after STFT:")
 	print(data.shape)
 	print(data)
 	
-	print("time:", time.time()-start_time)
-	
-	data_final = data
-	
+	# Plot spectrogram data
 	plt.pcolormesh(np.abs(data.T))
 	plt.title('STFT Magnitude')
 	plt.ylabel('Frequency [Hz]')
 	plt.xlabel('Time [sec]')
 	# plt.show()
 	
-	return data_final
+	# == Complex to Re/Im ==
+	
+	data = convert_to_scalars(data)
+	
+	# == Power Law Compression ==
+	
+	# TODO: test this
+	
+	# data = power_law_encode(data)
+	# data = power_law_decode(data)
+	
+	print("\nData after conversion:")
+	print(data.shape)
+	print(data)
+	
+	return data
 
 def convert_to_scalars(data):
 	# Convert complex arrays into scalar components for Re and Im parts
@@ -151,7 +156,7 @@ def power_law_decode(data, power=0.3):
 	return power_law_encode(data, power=1.0/power)
 
 def visualise_data(data):
-	# Visualise data components
+	# Visualise real and imaginary data components
 	plt.clf()
 	x = lambda a: 'Real' if a==0 else 'Imaginary'
 	for i in range(2):
@@ -291,7 +296,7 @@ def convolution_model(data, num_speakers=2):
 		name = layer.get_config()["name"]
 		if "batch_normal" in name or "activation" in name:
 			continue
-		print(layer.output_shape, name)
+		print(layer.output_shape, "\t", name)
 	
 	# Compile the model before training
 	model.compile(optimizer='adam', loss='mse')
@@ -300,19 +305,13 @@ def convolution_model(data, num_speakers=2):
 	return model
 
 def main():
-	plt.figure(figsize=(20, 10))
-	plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.2)
 	
-	data = load_data()
-	data = convert_to_scalars(data)
-	# data = power_law_encode(data)
-	# data = power_law_decode(data)
-	print(data.shape)
-	print(data)
+	data = load_wav()
+	data = wav_to_spectrogram(data)
 	
 	# visualise_data(data)
 	
-	convolution_model(data)
+	model = convolution_model(data)
 	
 	# train_model(data)
 	

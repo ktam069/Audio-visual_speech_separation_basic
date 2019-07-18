@@ -3,7 +3,9 @@ Basic version of the implementation for Part IV Project #80. Commands are adpate
 
 # Dependencies
 
-**Download with pip install:**
+## Download and install:**
+
+**pip install:**
 
 Keras
 
@@ -15,13 +17,13 @@ pytest
 
 sox
 
-**Download and install manually:**
+**Install manually:**
 
 ffmpeg
 
 cmake
 
-Ensure that the following are in your system path environment variables:
+## Ensure that the following are in your system path environment variables:
 
 ...\Python\Scripts
 
