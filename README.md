@@ -3,9 +3,9 @@ Basic version of the implementation for Part IV Project #80. Commands are adpate
 
 # Dependencies
 
-## Download and install:**
+### Download and install:
 
-**pip install:**
+**Use pip install:**
 
 Keras
 
@@ -23,7 +23,7 @@ ffmpeg
 
 cmake
 
-## Ensure that the following are in your system path environment variables:
+### Ensure that the following are in your system path environment variables:
 
 ...\Python\Scripts
 

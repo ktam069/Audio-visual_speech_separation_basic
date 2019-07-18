@@ -15,6 +15,17 @@ from keras.layers import BatchNormalization, Activation, Flatten, TimeDistribute
 
 # ===== Settings =====
 
+# Display options
+PRINT_DATA = False
+DISPLAY_GRAPHS = False
+
+# Range of data to use for training (excludes END_ID)
+START_ID = 0
+END_ID = 21
+
+# Sampling rate
+SAMPLING_RATE = 16000
+
 # Filepaths to the locations for saved data and models
 
 path_to_data = "./data/"
@@ -25,28 +36,47 @@ path_to_data_video = "./data/video/face_input/"
 
 # audio_data_name = "trim_audio_train%d.wav"
 
-# Plot display settings
-plt.figure(figsize=(20, 10))
-plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.2)
-
 # ====================
 
-def load_wav():
-	# File number of audio data to be loaded
-	data_num = 1
+def load_data():
+	data_train = []
+	print("Loading data files %d to %d..."%(START_ID,END_ID-1))
+		
+	for data_num in range(START_ID, END_ID):
+		print("\tLoading audio data file %d..."%data_num, end='\r', flush=True)
+		
+		# Load wav file into an array
+		data = load_wav(data_num)
+		if data is None:
+			continue
+		
+		# Convert the array into a spectrogram
+		data = wav_to_spectrogram(data)
+		if DISPLAY_GRAPHS:
+			visualise_data(data)
+		
+		# Add data point to training set
+		data_train.append(data)
 	
-	# Filepath of audio file to be loaded
-	path = path_to_data_audio + "trim_audio_train%d.wav"%data_num
-	
-	# Sampling rate
-	sr = 16000
-	
-	# Load wav file into an array (an ndarray)
-	data, _ = librosa.load(path, sr=sr)
-	
-	print("\nData after loading:")
-	print(data.shape)
-	print(data)
+	return data_train
+
+def load_wav(data_num):
+	try:
+		if PRINT_DATA:
+			print("\n\n=== Loading audio file "+str(data_num)+" ===")
+		
+		# Filepath of audio file to be loaded
+		path = path_to_data_audio + "trim_audio_train%d.wav"%data_num
+		
+		# Load wav file into an array (an ndarray)
+		data, _ = librosa.load(path, sr=SAMPLING_RATE)
+		
+		if PRINT_DATA:
+			print("\nData after loading:")
+			print(data.shape)
+			print(data)
+	except:
+		return None
 	
 	return data
 
@@ -77,9 +107,10 @@ def wav_to_spectrogram(data):
 	
 	window_size_samples = 512
 	
-	print("segment_size_samples", len(data))
-	print("window_size_samples", window_size_samples)
-	print("window_stride_samples", window_stride_samples)
+	if PRINT_DATA:
+		print("segment_size_samples", len(data))
+		print("window_size_samples", window_size_samples)
+		print("window_stride_samples", window_stride_samples)
 	
 	data = tf.signal.stft(data, 
 						   frame_length=window_size_samples,
@@ -93,16 +124,18 @@ def wav_to_spectrogram(data):
 		
 	data = tf.Session().run(data)
 	
-	print("\nData after STFT:")
-	print(data.shape)
-	print(data)
+	if PRINT_DATA:
+		print("\nData after STFT:")
+		print(data.shape)
+		print(data)
 	
-	# Plot spectrogram data
-	plt.pcolormesh(np.abs(data.T))
-	plt.title('STFT Magnitude')
-	plt.ylabel('Frequency [Hz]')
-	plt.xlabel('Time [sec]')
-	# plt.show()
+	if DISPLAY_GRAPHS:
+		# Plot spectrogram data
+		plt.pcolormesh(np.abs(data.T))
+		plt.title('STFT Magnitude')
+		plt.ylabel('Frequency [Hz]')
+		plt.xlabel('Time [sec]')
+		# plt.show()
 	
 	# == Complex to Re/Im ==
 	
@@ -115,9 +148,10 @@ def wav_to_spectrogram(data):
 	# data = power_law_encode(data)
 	# data = power_law_decode(data)
 	
-	print("\nData after conversion:")
-	print(data.shape)
-	print(data)
+	if PRINT_DATA:
+		print("\nData after conversion:")
+		print(data.shape)
+		print(data)
 	
 	return data
 
@@ -157,7 +191,13 @@ def power_law_decode(data, power=0.3):
 
 def visualise_data(data):
 	# Visualise real and imaginary data components
-	plt.clf()
+	
+	plt.close()
+	
+	# Plot display settings
+	plt.figure(figsize=(20, 10))
+	plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.2)
+
 	x = lambda a: 'Real' if a==0 else 'Imaginary'
 	for i in range(2):
 		plt.subplot(1, 3, i+1)
@@ -176,8 +216,10 @@ def visualise_data(data):
 	plt.show()
 
 def train_model(data, num_speakers=2):
+	assert data.shape == (298, 257, 2), "Please check if the input shape is correct - expected (298, 257, 2)"
+	
 	# Create a compiled model
-	model = convolution_model(data)
+	model = convolution_model()
 	
 	# Process training data
 	pass
@@ -186,9 +228,8 @@ def train_model(data, num_speakers=2):
 	# Train the model
 	model.fit(x_train, y_train, batch_size=6, epochs=1)		# TODO: adjust the arguments used
 
-def convolution_model(data, num_speakers=2):
-	assert data.shape == (298, 257, 2), "Please check if the input shape is correct"
-	
+def convolution_model(num_speakers=2):
+
 	# == Audio convolution layers ==
 	
 	model = Sequential()
@@ -273,6 +314,8 @@ def convolution_model(data, num_speakers=2):
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
 	
+	# == AV fused neural network ==
+	
 	# AV fusion step(s)
 	model.add(TimeDistributed(Flatten()))
 	
@@ -306,12 +349,9 @@ def convolution_model(data, num_speakers=2):
 
 def main():
 	
-	data = load_wav()
-	data = wav_to_spectrogram(data)
+	data = load_data()
 	
-	# visualise_data(data)
-	
-	model = convolution_model(data)
+	model = convolution_model()
 	
 	# train_model(data)
 	
