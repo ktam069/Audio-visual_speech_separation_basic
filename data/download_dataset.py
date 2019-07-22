@@ -11,13 +11,13 @@ from audio_norm import norm
 from video_download import download_video
 from MTCNN_detect import mtcnn_detect
 from frame_inspector import frame_inspect
-from build_audio_database_v2 import build_database
+# from build_audio_database_v2 import build_database
 
 # ===== Settings =====
 
 # Range of data to download from AVSpeech (excludes end_id - usually...)
-start_id = 0
-end_id = 21
+start_id = 21
+end_id = 201
 
 # Whether to download from the training set or the test set
 dl_from_training = True
@@ -63,7 +63,7 @@ def build_AV_databases():
 def main():
 	# Download and process audio data from links
 	os.chdir("./audio")
-	process_audio()
+	# process_audio()
 	
 	# Download and process video data from links
 	os.chdir("../video")

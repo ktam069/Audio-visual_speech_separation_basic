@@ -6,13 +6,15 @@ import matplotlib.pyplot as plt
 import librosa
 
 import tensorflow as tf
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional
 from keras.layers import BatchNormalization, Activation, Flatten, TimeDistributed, Reshape
 from keras.callbacks import ModelCheckpoint
 
 import os
 # import sys
+import glob
+from datetime import datetime
 
 # ===== Settings =====
 
@@ -68,7 +70,7 @@ def generate_dataset(clean_audio_dataset):
 	dataset = []
 	
 	for i in range(len(clean_audio_dataset)):
-		for j in range(i, len(clean_audio_dataset)):
+		for j in range(i+1, len(clean_audio_dataset)):
 			# Mix audio for 2 speakers (no noise)
 			mixed_audio = clean_audio_dataset[i] + clean_audio_dataset[j]
 			
@@ -231,7 +233,7 @@ def visualise_data(data):
 	x = lambda a: 'Real' if a==0 else 'Imaginary'
 	for i in range(2):
 		plt.subplot(1, 3, i+1)
-		
+	
 		plt.pcolormesh(np.abs(data[:,:,i].T))
 		plt.title(x(i))
 		plt.ylabel('Frequency [Hz]')
@@ -257,11 +259,13 @@ def train_model(x_train, y_train, num_speakers=2):
 	
 	# Create checkpoints when training model (save models to file)
 	filepath = path_to_models + "basic-ao-{epoch:02d}.hdf5"
+	# checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+	# checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
 	checkpoint = ModelCheckpoint(filepath, verbose=1, save_best_only=False)
 	callback_list = [checkpoint]
 	
 	# Train the model
-	model.fit(x_train, y_train, batch_size=6, epochs=10, callbacks=callback_list, verbose=2)		# TODO: adjust the arguments used
+	model.fit(x_train, y_train, batch_size=6, epochs=30, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
 
 def convolution_model(num_speakers=2):
 
@@ -376,11 +380,43 @@ def convolution_model(num_speakers=2):
 			continue
 		print(layer.output_shape, "\t", name)
 	
+	# Alternatively, print the default keras model summary
+	print(model.summary())
+	
 	# Compile the model before training
 	model.compile(optimizer='adam', loss='mse')
 	# model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
 	
 	return model
+
+def test_model(x_test, y_test):
+	# Test using the newest available model
+	all_model_paths = glob.glob(path_to_models+'*')
+	newest_model_path = max(all_model_paths, key=os.path.getctime)
+	
+	newest_model_path
+	
+	# Create a compiled model
+	model = convolution_model()
+	
+	# Load weights from the last saved model
+	model.load_weights(newest_model_path)
+	
+	# TODO / Temp: Save model for mobile append
+	# model_save_path = "saved_model_basic_01.h5"
+	t = datetime.now().strftime("%d_%m_%H%M%S")
+	model_save_path = path_to_models + "saved_model_basic_%s.h5"%t
+	model.save(model_save_path)
+	
+	# TODO / TEmp: Checking that the model loads
+	new_model = load_model(model_save_path)
+	print("\n" + "="*60 + "\n")
+	print("\nLoaded model summary:")
+	print(new_model.summary())
+	
+	# loss, acc = model.evaluate(x_test, y_test)
+	# print(loss, acc)
+	
 
 def main():
 	
@@ -402,8 +438,11 @@ def main():
 	x_train = dataset_train[:,:,:,:,0 ]
 	y_train = dataset_train[:,:,:,:,1:]
 	
-	# Build and train the neural network
-	train_model(x_train, y_train)
+	# # Build and train the neural network
+	# train_model(x_train, y_train)
+	
+	# Test model - temporarily just using the training data to test for errors
+	test_model(x_train[0:1], y_train[0:1])
 	
 if __name__ == '__main__':
 	main()
