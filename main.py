@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import librosa
+from scipy.io import wavfile
 
 import tensorflow as tf
 from keras.models import Sequential, load_model
@@ -29,16 +30,17 @@ END_ID = 21
 # Sampling rate
 SAMPLING_RATE = 16000
 
-# Filepaths to the locations for saved data and models
-
-path_to_data = "./data/"
-path_to_models = "./saved_models/"
-
+# Filepaths to the locations for input audio-visual files
+# path_to_data = "./data/"
 path_to_data_audio = "./data/audio/audio_train/"
 path_to_data_video = "./data/video/face_input/"
-
 # audio_data_name = "trim_audio_train%d.wav"
-# dataset_filepath = "./data_train/"+"dataset_train_%d-%d.npy"%(START_ID,END_ID-1)
+
+# Filepaths to the locations for saved data and models
+path_to_models = "./saved_models/"
+path_to_saved_datasets = "./dataset_npy/"
+path_to_outputs = "./output_wavs/"
+
 
 # ====================
 
@@ -247,6 +249,32 @@ def visualise_data(data):
 	plt.xlabel('Time [sec]')
 	plt.show()
 
+def visualise_model_output(output_list, input_mixed):	
+	plt.close()
+	
+	# Plot display settings
+	plt.figure(figsize=(20, 10))
+	plt.subplots_adjust(left=0.05, bottom=0.05, right=0.95, top=0.95, wspace=0.2, hspace=0.2)
+	
+	plt.subplot(1, 3, 1)
+	
+	plt.pcolormesh(np.abs(convert_to_complex(input_mixed).T))
+	plt.title('Mixed Input')
+	plt.ylabel('Frequency [Hz]')
+	plt.xlabel('Time [sec]')
+
+	x = lambda a: 'Part 1 Out' if a==0 else 'Part 2 Out'
+	for i in range(2):
+		plt.subplot(1, 3, i+2)
+		
+		spect = convert_to_complex(output_list[i])
+		plt.pcolormesh(np.abs(spect.T))
+		plt.title(x(i))
+		plt.ylabel('Frequency [Hz]')
+		plt.xlabel('Time [sec]')
+	
+	plt.show()
+
 def train_model(x_train, y_train, num_speakers=2):
 	assert x_train[0].shape == (298, 257, 2), "Data shape is incorrect - expected (298, 257, 2), got "+str(x_train[0].shape)
 	
@@ -394,34 +422,68 @@ def test_model(x_test, y_test):
 	all_model_paths = glob.glob(path_to_models+'*')
 	newest_model_path = max(all_model_paths, key=os.path.getctime)
 	
-	newest_model_path
+	# newest_model_path
 	
-	# Create a compiled model
-	model = convolution_model()
+	# # Create a compiled model
+	# model = convolution_model()
 	
-	# Load weights from the last saved model
-	model.load_weights(newest_model_path)
+	# # Load weights from the last saved model
+	# model.load_weights(newest_model_path)
 	
-	# TODO / Temp: Save model for mobile append
-	# model_save_path = "saved_model_basic_01.h5"
+	# # TODO / Temp: Save model for mobile append
+	# # model_save_path = "saved_model_basic_01.h5"
 	t = datetime.now().strftime("%d_%m_%H%M%S")
 	model_save_path = path_to_models + "saved_model_basic_%s.h5"%t
-	model.save(model_save_path)
+	# model.save(model_save_path)
 	
 	# TODO / TEmp: Checking that the model loads
-	new_model = load_model(model_save_path)
+	# new_model = load_model(model_save_path)
+	new_model = load_model(newest_model_path)
 	print("\n" + "="*60 + "\n")
 	print("\nLoaded model summary:")
 	print(new_model.summary())
 	
-	# loss, acc = model.evaluate(x_test, y_test)
-	# print(loss, acc)
+	print("\nEvaluating on test data...")
+	
+	# print(x_test.shape, y_test.shape)
+	
+	loss = new_model.evaluate(x_test, y_test)
+	print("eval loss:", loss)
+	
+	output_specs = new_model.predict(x_test)
+	# print(type(output_specs))
+	print(output_specs.shape)
+	# print(output_specs)
+	
+	# Complex ratio masks for the two speakers, for the first entry of the test set
+	p1_spect = output_specs[0][:,:,:,0]
+	p2_spect = output_specs[0][:,:,:,1]
+	mixed_spect = x_test[0]
+	
+	# Display inputs and outputs
+	visualise_model_output([p1_spect, p2_spect], mixed_spect)
+	
+	# Display actual clean spectrograms
+	p1_spect_clean = y_test[0][:,:,:,0]
+	p2_spect_clean = y_test[0][:,:,:,1]
+	visualise_model_output([p1_spect_clean, p2_spect_clean], mixed_spect)
+	
+	# Apply complex mask to input spectrogram
+	# output_specs = output_specs # *
+	
+	# Convert separated speech spectrograms to wav files
+	# output_specs = spectrogram_to_wav(output_specs)
+	
+	wavfile.write(path_to_outputs+"output_file_%s_p1.wav"%t, SAMPLING_RATE, p1_spect)
+	wavfile.write(path_to_outputs+"output_file_%s_p2.wav"%t, SAMPLING_RATE, p2_spect)
+	
+	print("Output file saved")
 	
 
 def main():
 	
 	# Generate data set to use for training
-	filepath = "./data_train/"+"dataset_train_%d-%d.npy"%(START_ID,END_ID-1)
+	filepath = path_to_saved_datasets+"dataset_train_%d-%d.npy"%(START_ID,END_ID-1)
 	if not os.path.exists(filepath):
 		# Load the data set of AV data, mix, and convert to spectrograms
 		audio_wav = load_data()
@@ -445,5 +507,14 @@ def main():
 	test_model(x_train[0:1], y_train[0:1])
 	
 if __name__ == '__main__':
+	# Create any missing folders for saving data and outputs
+	if not os.path.exists(path_to_models):
+		os.mkdir(path_to_models)
+	if not os.path.exists(path_to_saved_datasets):
+		os.mkdir(path_to_saved_datasets)
+	if not os.path.exists(path_to_outputs):
+		os.mkdir(path_to_outputs)
+	
+	# Run AV speech separation program
 	main()
 

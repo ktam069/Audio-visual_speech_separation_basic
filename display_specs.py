@@ -1,4 +1,4 @@
-# Main program - Part IV Project 80 Basic Version
+# Test program - Displays some mixed spectrograms (i.e. data used for training)
 
 import pandas as pd
 import numpy as np
