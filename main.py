@@ -223,6 +223,50 @@ def power_law_encode(data, power=0.3):
 def power_law_decode(data, power=0.3):
 	return power_law_encode(data, power=1.0/power)
 
+def cRM_encode(S_spect, Y_spect):
+	# Create a complex (ideal) ratio mask of the spectrogram input
+	# S and Y are the STFT of the clean and noisy signals respectively
+	
+	output_mask = np.zeros(S_spect.shape)
+	
+	# Note: spectrogram shape is (298, 257, 2) - storing real and complex components
+	S_spect_re = S_spect[:,:,0]
+	S_spect_im = S_spect[:,:,1]
+	Y_spect_re = Y_spect[:,:,0]
+	Y_spect_im = Y_spect[:,:,1]
+	
+	# Use a small term (ep) to avoid division by zero
+	ep = 1e-8
+	denominator    = (Y_spect_re * Y_spect_re + Y_spect_im * Y_spect_im) + ep
+	
+	output_mask_re = (Y_spect_re * S_spect_re + Y_spect_im * S_spect_im) / denominator
+	output_mask_im = (Y_spect_re * S_spect_im - Y_spect_im * S_spect_re) / denominator
+	
+	output_mask[:,:,0] = output_mask_re
+	output_mask[:,:,1] = output_mask_im
+	
+	return output_mask
+
+def cRM_decode(cRM_output, Y_spect):
+	# Multiply the complex ratio mask by the original noisy spectrogram to get the clean spectrogram
+	# Needs to decompress the ratio mask beforehand
+	
+	output_spect = np.zeros(cRM_output.shape)
+	
+	cRM_re = cRM_output[:,:,0]
+	cRM_im = cRM_output[:,:,1]
+	Y_spect_re = Y_spect[:,:,0]
+	Y_spect_im = Y_spect[:,:,1]
+	
+	# Multiplication of complex numbers: (a1+i*b1)(a2+i*b2) = (a1*a2-b1*b2) + i(a1*b1+a2*b2)
+	output_spect_re = Y_spect_re * cRM_re - Y_spect_im * cRM_im
+	output_spect_im = Y_spect_re * cRM_im + Y_spect_im * cRM_re
+	
+	output_spect[:,:,0] = output_spect_re
+	output_spect[:,:,1] = output_spect_im
+		
+	return output_spect
+	
 def visualise_data(data):
 	# Visualise real and imaginary data components
 	
@@ -293,7 +337,8 @@ def train_model(x_train, y_train, num_speakers=2):
 	callback_list = [checkpoint]
 	
 	# Train the model
-	model.fit(x_train, y_train, batch_size=6, epochs=30, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
+	# model.fit(x_train, y_train, batch_size=6, epochs=30, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
+	model.fit(x_train, y_train, batch_size=60, epochs=3, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
 
 def convolution_model(num_speakers=2):
 
@@ -474,10 +519,10 @@ def test_model(x_test, y_test):
 	# Convert separated speech spectrograms to wav files
 	# output_specs = spectrogram_to_wav(output_specs)
 	
-	wavfile.write(path_to_outputs+"output_file_%s_p1.wav"%t, SAMPLING_RATE, p1_spect)
-	wavfile.write(path_to_outputs+"output_file_%s_p2.wav"%t, SAMPLING_RATE, p2_spect)
+	# wavfile.write(path_to_outputs+"output_file_%s_p1.wav"%t, SAMPLING_RATE, p1_spect)
+	# wavfile.write(path_to_outputs+"output_file_%s_p2.wav"%t, SAMPLING_RATE, p2_spect)
 	
-	print("Output file saved")
+	# print("Output file saved")
 	
 
 def main():

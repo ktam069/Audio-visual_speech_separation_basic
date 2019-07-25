@@ -1,3 +1,8 @@
+To be completed:
+1) Process each spectrogram individually, and use a data generator instead for training
+2) Dependencies list in readme may not be complete - but not too important atm
+3) 
+
 Needs checking:
 1) Not sure if the arguments for the stft is correct - used the example code to fill in the gaps for now
 2) Power-law compression? - as above, not sure about the formula (mu-law??)
@@ -8,8 +13,3 @@ Needs checking:
 7) Can spectrograms be combined directly (instead of wav files)? Even after power law compression?
 8) Include permutation variations when mixing audio to create the dataset?
 9) '{val_loss:.2f}' in ModelCheckpoint path gives KeyError - trouble saving based on metric in general
-
-To be completed:
-1) Dependencies list in readme may not be complete - but not too important atm
-2) 
-
