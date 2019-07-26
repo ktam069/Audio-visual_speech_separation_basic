@@ -23,9 +23,12 @@ from datetime import datetime
 PRINT_DATA = False
 DISPLAY_GRAPHS = False
 
+# Use float32 format for dataset ndarrays
+USE_FLOAT32 = True
+
 # Range of data to use for training (excludes END_ID)
 START_ID = 0
-END_ID = 2
+END_ID = 21
 
 # Sampling rate
 SAMPLING_RATE = 16000
@@ -84,14 +87,20 @@ def generate_dataset(clean_audio_dataset):
 def dataset_to_spectrograms(dataset):
 	dataset_spects = np.zeros((dataset.shape[0], 298, 257, 2, dataset.shape[1]))
 	
-	for i in range(len(dataset)):
-		print("\tConverting audio data %d/%d to spectrogram..."%(i+1,len(dataset)), end='\r', flush=True)
+	# for i in range(len(dataset)):
+		# print("\tConverting audio data %d/%d to spectrogram..."%(i+1,len(dataset)), end='\r', flush=True)
 		
 		# Convert the data array into a spectrogram
-		for j in range(dataset.shape[1]):
-			dataset_spects[i,:,:,:,j] = wav_to_spectrogram(dataset[i,j,:])
+		# for j in range(dataset.shape[1]):
+			# dataset_spects[i,:,:,:,j] = wav_to_spectrogram(dataset[i,j,:])
+		
+		# print(dataset_spects.shape, dataset.shape)
 	
-	print()
+	print("Converting audio data to spectrograms...")
+	dataset_s = wav_to_spectrogram(dataset[:,:,:])
+	# print(dataset_s.shape, dataset.shape)
+	
+	# print()
 	return dataset_spects
 
 def dataset_labels_to_cRMs(dataset_spects):
@@ -99,7 +108,7 @@ def dataset_labels_to_cRMs(dataset_spects):
 	
 	print("Converting outputs to cRMs...")
 		
-	print(dataset_spects.shape)
+	# print(dataset_spects.shape)
 	
 	# TODO: complete
 	dataset_cRMs[:,:,:,:,0] = dataset_spects[:,:,:,:,0]
@@ -129,23 +138,26 @@ def load_wav(data_num):
 	return data
 
 def wav_to_spectrogram(data):
+	assert len(data.shape) == 3, "Unexpected shape for data input, should be (n_samples, n_speakers+1, t_samples)"
 	
 	# == STFT ==
 
 	# Data padding??...may not be needed (TODO)
-	length = len(data)
+	length = data.shape[2]
 	# new_power_base_2 = np.ceil(np.log(length)/np.log(2))
 	# new_len = pow(2, int(new_power_base_2))
 	new_len = 48192 - 512
+	shape = data.shape
+	new_shape = shape[:len(shape)-1] + (new_len,)
 	
 	if new_len > length:
-		new_data = np.zeros(new_len)
-		new_data[:len(data)] = data
+		new_data = np.zeros(new_shape)
+		new_data[:,:,:new_len] = data
 	else:
-		new_data = np.zeros(new_len)
-		new_data[:] = data[:new_len]
+		new_data = np.zeros(new_shape)
+		new_data[:,:,:] = data[:,:,:new_len]
 	data = new_data.astype('float32')
-		
+	
 	# Calculations taken from https://github.com/tensorflow/tensorflow/issues/24620
 	sample_rate = 16000 #16kHz
 	window_size_ms = 25
@@ -172,6 +184,10 @@ def wav_to_spectrogram(data):
 		
 	data = tf.Session().run(data)
 	
+	# print(data.shape)
+	data = np.moveaxis(data, 1, -1)
+	# print(data.shape)
+	
 	if PRINT_DATA:
 		print("\nData after STFT:")
 		print(data.shape)
@@ -187,7 +203,7 @@ def wav_to_spectrogram(data):
 	
 	# == Complex to Re/Im ==
 	
-	data = convert_to_scalars(data)
+	data = convert_to_scalars_ndarray(data)
 	
 	# == Power Law Compression ==
 	
@@ -202,6 +218,29 @@ def wav_to_spectrogram(data):
 		print(data)
 	
 	return data
+
+def convert_to_scalars_ndarray(data):
+	# Convert complex arrays into scalar components for Re and Im parts
+	# Allows extra dimension for processing multiple samples (compared to convert_to_scalars)
+	
+	new_s = data.shape + (2,)
+	new_data = np.zeros(new_s)
+	
+	new_data[:,:,:,:,0] = data.real
+	new_data[:,:,:,:,1] = data.imag
+	
+	return new_data
+
+def convert_to_complex_ndarray(data):
+	# Convert scalar components for Re and Im parts into complex arrays
+	# Allows extra dimension for processing multiple samples (compared to convert_to_complex)
+	
+	new_s = data.shape[:-1]
+	new_data = np.zeros(new_s, dtype=complex)
+	
+	new_data[:,:] = data[:,:,0] + data[:,:,1]*1j
+	
+	return new_data
 
 def convert_to_scalars(data):
 	# Convert complex arrays into scalar components for Re and Im parts
@@ -564,6 +603,10 @@ def main():
 		dataset_wav = generate_dataset(audio_wav)
 		dataset_train = dataset_to_spectrograms(dataset_wav)
 		dataset_train = dataset_labels_to_cRMs(dataset_train)
+		print("Finished converting dataset to spectrograms and cRMs\n")
+		
+		if USE_FLOAT32:
+			dataset_train = dataset_train.astype('float32')
 		
 		np.save(filepath, dataset_train)
 	else:
@@ -579,7 +622,7 @@ def main():
 	# train_model(x_train, y_train)
 	
 	# Test model - temporarily just using the training data to test for errors
-	test_model(x_train[0:1], y_train[0:1])
+	# test_model(x_train[0:1], y_train[0:1])
 	
 if __name__ == '__main__':
 	# Create any missing folders for saving data and outputs

@@ -13,3 +13,4 @@ Needs checking:
 7) Can spectrograms be combined directly (instead of wav files)? Even after power law compression?
 8) Include permutation variations when mixing audio to create the dataset?
 9) '{val_loss:.2f}' in ModelCheckpoint path gives KeyError - trouble saving based on metric in general
+10) Type for ndarray? float32, float64, ...?
