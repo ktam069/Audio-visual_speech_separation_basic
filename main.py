@@ -25,7 +25,7 @@ DISPLAY_GRAPHS = False
 
 # Range of data to use for training (excludes END_ID)
 START_ID = 0
-END_ID = 21
+END_ID = 2
 
 # Sampling rate
 SAMPLING_RATE = 16000
@@ -82,17 +82,31 @@ def generate_dataset(clean_audio_dataset):
 	return np.array(dataset)
 
 def dataset_to_spectrograms(dataset):
-	dataset_specs = np.zeros((dataset.shape[0], 298, 257, 2, dataset.shape[1]))
+	dataset_spects = np.zeros((dataset.shape[0], 298, 257, 2, dataset.shape[1]))
 	
 	for i in range(len(dataset)):
 		print("\tConverting audio data %d/%d to spectrogram..."%(i+1,len(dataset)), end='\r', flush=True)
 		
 		# Convert the data array into a spectrogram
 		for j in range(dataset.shape[1]):
-			dataset_specs[i,:,:,:,j] = wav_to_spectrogram(dataset[i,j,:])
+			dataset_spects[i,:,:,:,j] = wav_to_spectrogram(dataset[i,j,:])
 	
 	print()
-	return dataset_specs
+	return dataset_spects
+
+def dataset_labels_to_cRMs(dataset_spects):
+	dataset_cRMs = np.zeros(dataset_spects.shape)
+	
+	print("Converting outputs to cRMs...")
+		
+	print(dataset_spects.shape)
+	
+	# TODO: complete
+	dataset_cRMs[:,:,:,:,0] = dataset_spects[:,:,:,:,0]
+	dataset_cRMs[:,:,:,:,1] = cRM_encode(dataset_spects[:,:,:,:,0], dataset_spects[:,:,:,:,1])
+	dataset_cRMs[:,:,:,:,2] = cRM_encode(dataset_spects[:,:,:,:,0], dataset_spects[:,:,:,:,2])
+	
+	return dataset_cRMs
 
 def load_wav(data_num):
 	try:
@@ -230,10 +244,10 @@ def cRM_encode(S_spect, Y_spect):
 	output_mask = np.zeros(S_spect.shape)
 	
 	# Note: spectrogram shape is (298, 257, 2) - storing real and complex components
-	S_spect_re = S_spect[:,:,0]
-	S_spect_im = S_spect[:,:,1]
-	Y_spect_re = Y_spect[:,:,0]
-	Y_spect_im = Y_spect[:,:,1]
+	S_spect_re = S_spect[:,:,:,0]
+	S_spect_im = S_spect[:,:,:,1]
+	Y_spect_re = Y_spect[:,:,:,0]
+	Y_spect_im = Y_spect[:,:,:,1]
 	
 	# Use a small term (ep) to avoid division by zero
 	ep = 1e-8
@@ -242,28 +256,29 @@ def cRM_encode(S_spect, Y_spect):
 	output_mask_re = (Y_spect_re * S_spect_re + Y_spect_im * S_spect_im) / denominator
 	output_mask_im = (Y_spect_re * S_spect_im - Y_spect_im * S_spect_re) / denominator
 	
-	output_mask[:,:,0] = output_mask_re
-	output_mask[:,:,1] = output_mask_im
+	output_mask[:,:,:,0] = output_mask_re
+	output_mask[:,:,:,1] = output_mask_im
 	
 	return output_mask
 
 def cRM_decode(cRM_output, Y_spect):
+	# (Apply complex mask to input spectrogram)
 	# Multiply the complex ratio mask by the original noisy spectrogram to get the clean spectrogram
 	# Needs to decompress the ratio mask beforehand
 	
 	output_spect = np.zeros(cRM_output.shape)
 	
-	cRM_re = cRM_output[:,:,0]
-	cRM_im = cRM_output[:,:,1]
-	Y_spect_re = Y_spect[:,:,0]
-	Y_spect_im = Y_spect[:,:,1]
+	cRM_re = cRM_output[:,:,:,0]
+	cRM_im = cRM_output[:,:,:,1]
+	Y_spect_re = Y_spect[:,:,:,0]
+	Y_spect_im = Y_spect[:,:,:,1]
 	
 	# Multiplication of complex numbers: (a1+i*b1)(a2+i*b2) = (a1*a2-b1*b2) + i(a1*b1+a2*b2)
 	output_spect_re = Y_spect_re * cRM_re - Y_spect_im * cRM_im
 	output_spect_im = Y_spect_re * cRM_im + Y_spect_im * cRM_re
 	
-	output_spect[:,:,0] = output_spect_re
-	output_spect[:,:,1] = output_spect_im
+	output_spect[:,:,:,0] = output_spect_re
+	output_spect[:,:,:,1] = output_spect_im
 		
 	return output_spect
 	
@@ -338,7 +353,7 @@ def train_model(x_train, y_train, num_speakers=2):
 	
 	# Train the model
 	# model.fit(x_train, y_train, batch_size=6, epochs=30, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
-	model.fit(x_train, y_train, batch_size=60, epochs=3, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
+	model.fit(x_train, y_train, batch_size=60, epochs=2, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
 
 def convolution_model(num_speakers=2):
 
@@ -469,22 +484,22 @@ def test_model(x_test, y_test):
 	
 	# newest_model_path
 	
-	# # Create a compiled model
-	# model = convolution_model()
+	# Create a compiled model
+	model = convolution_model()
 	
-	# # Load weights from the last saved model
-	# model.load_weights(newest_model_path)
+	# Load weights from the last saved model
+	model.load_weights(newest_model_path)
 	
-	# # TODO / Temp: Save model for mobile append
-	# # model_save_path = "saved_model_basic_01.h5"
+	# TODO / Temp: Save model for mobile append
 	t = datetime.now().strftime("%d_%m_%H%M%S")
 	model_save_path = path_to_models + "saved_model_basic_%s.h5"%t
 	# model.save(model_save_path)
 	
-	# TODO / TEmp: Checking that the model loads
+	# TODO / Temp: Checking that the model loads
 	# new_model = load_model(model_save_path)
 	new_model = load_model(newest_model_path)
 	print("\n" + "="*60 + "\n")
+	print("Using model loaded from:", newest_model_path)
 	print("\nLoaded model summary:")
 	print(new_model.summary())
 	
@@ -495,29 +510,43 @@ def test_model(x_test, y_test):
 	loss = new_model.evaluate(x_test, y_test)
 	print("eval loss:", loss)
 	
-	output_specs = new_model.predict(x_test)
-	# print(type(output_specs))
-	print(output_specs.shape)
-	# print(output_specs)
+	output_spects = new_model.predict(x_test)
+	# print(type(output_spects))
+	print(output_spects.shape)
+	# print(output_spects)
 	
-	# Complex ratio masks for the two speakers, for the first entry of the test set
-	p1_spect = output_specs[0][:,:,:,0]
-	p2_spect = output_specs[0][:,:,:,1]
+	# ==================================================================================
+	# Visualise the spectrograms for the first entry of the test set - testing purposes
+	
 	mixed_spect = x_test[0]
 	
-	# Display inputs and outputs
+	# Predicted output cRM / spectrograms
+	p1_spect = cRM_decode(output_spects[:,:,:,0], x_test)[0]
+	p2_spect = cRM_decode(output_spects[:,:,:,1], x_test)[0]
+	
+	# Display mixed input and predicted outputs
 	visualise_model_output([p1_spect, p2_spect], mixed_spect)
 	
 	# Display actual clean spectrograms
-	p1_spect_clean = y_test[0][:,:,:,0]
-	p2_spect_clean = y_test[0][:,:,:,1]
-	visualise_model_output([p1_spect_clean, p2_spect_clean], mixed_spect)
+	p1_spect_actual = cRM_decode(y_test[:,:,:,0], x_test)[0]
+	p2_spect_actual = cRM_decode(y_test[:,:,:,1], x_test)[0]
 	
-	# Apply complex mask to input spectrogram
-	# output_specs = output_specs # *
+	# Display mixed input and original clean audio wavs
+	visualise_model_output([p1_spect_actual, p2_spect_actual], mixed_spect)
+	
+	# Display cRMs
+	print("Displaying cRMs")
+	p1_cRM = output_spects[0][:,:,:,0]
+	p2_cRM = output_spects[0][:,:,:,1]
+	p1_cRM_actual = y_test[0][:,:,:,0]
+	p2_cRM_actual = y_test[0][:,:,:,1]
+	visualise_model_output([p1_cRM, p2_cRM], mixed_spect)
+	visualise_model_output([p1_cRM_actual, p2_cRM_actual], mixed_spect)
+	
+	# ==================================================================================
 	
 	# Convert separated speech spectrograms to wav files
-	# output_specs = spectrogram_to_wav(output_specs)
+	# output_spects = spectrogram_to_wav(output_spects)
 	
 	# wavfile.write(path_to_outputs+"output_file_%s_p1.wav"%t, SAMPLING_RATE, p1_spect)
 	# wavfile.write(path_to_outputs+"output_file_%s_p2.wav"%t, SAMPLING_RATE, p2_spect)
@@ -534,6 +563,7 @@ def main():
 		audio_wav = load_data()
 		dataset_wav = generate_dataset(audio_wav)
 		dataset_train = dataset_to_spectrograms(dataset_wav)
+		dataset_train = dataset_labels_to_cRMs(dataset_train)
 		
 		np.save(filepath, dataset_train)
 	else:
