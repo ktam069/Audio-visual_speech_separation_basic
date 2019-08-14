@@ -1,6 +1,6 @@
 # Main program - Part IV Project 80 Basic Version
 
-import pandas as pd
+# import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import librosa
@@ -97,8 +97,8 @@ def dataset_to_spectrograms(dataset):
 		# print(dataset_spects.shape, dataset.shape)
 	
 	print("Converting audio data to spectrograms...")
-	dataset_s = wav_to_spectrogram(dataset[:,:,:])
-	# print(dataset_s.shape, dataset.shape)
+	dataset_spects = wav_to_spectrogram(dataset[:,:,:])
+	# print(dataset_spects.shape, dataset.shape)
 	
 	# print()
 	return dataset_spects
@@ -116,6 +116,21 @@ def dataset_labels_to_cRMs(dataset_spects):
 	dataset_cRMs[:,:,:,:,2] = cRM_encode(dataset_spects[:,:,:,:,0], dataset_spects[:,:,:,:,2])
 	
 	return dataset_cRMs
+
+def normalise_dataset(data):
+	if type(data) is not np.ndarray:
+		data = np.array(data)
+
+	if PRINT_DATA:
+		print("\nData before normalisation:")	
+		print(data)
+		print(np.max(data))
+	
+	max = np.max(data)
+	if max > 0:
+		data = data / max
+	
+	return data
 
 def load_wav(data_num):
 	try:
@@ -191,7 +206,7 @@ def wav_to_spectrogram(data):
 	if PRINT_DATA:
 		print("\nData after STFT:")
 		print(data.shape)
-		print(data)
+		# print(data)
 	
 	if DISPLAY_GRAPHS:
 		# Plot spectrogram data
@@ -215,7 +230,7 @@ def wav_to_spectrogram(data):
 	if PRINT_DATA:
 		print("\nData after conversion:")
 		print(data.shape)
-		print(data)
+		# print(data)
 	
 	return data
 
@@ -229,11 +244,16 @@ def convert_to_scalars_ndarray(data):
 	new_data[:,:,:,:,0] = data.real
 	new_data[:,:,:,:,1] = data.imag
 	
+	new_data = np.moveaxis(new_data, -2, -1)
+	
 	return new_data
 
 def convert_to_complex_ndarray(data):
 	# Convert scalar components for Re and Im parts into complex arrays
 	# Allows extra dimension for processing multiple samples (compared to convert_to_complex)
+	
+	# TODO: might need fixing (last two axes were in the wrong order - might not be fixed)
+	data = np.moveaxis(data, -2, -1)
 	
 	new_s = data.shape[:-1]
 	new_data = np.zeros(new_s, dtype=complex)
@@ -511,8 +531,8 @@ def convolution_model(num_speakers=2):
 	print(model.summary())
 	
 	# Compile the model before training
-	model.compile(optimizer='adam', loss='mse')
-	# model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
+	# model.compile(optimizer='adam', loss='mse')
+	model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
 	
 	return model
 
@@ -603,6 +623,7 @@ def main():
 		dataset_wav = generate_dataset(audio_wav)
 		dataset_train = dataset_to_spectrograms(dataset_wav)
 		dataset_train = dataset_labels_to_cRMs(dataset_train)
+		dataset_train = normalise_dataset(dataset_train)
 		print("Finished converting dataset to spectrograms and cRMs\n")
 		
 		if USE_FLOAT32:

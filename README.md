@@ -3,13 +3,15 @@ Basic version of the implementation for Part IV Project #80. Commands are adpate
 
 # Dependencies
 
+To run this project fully, the following libraries and tools are required.
+
 ### Download and install:
 
 **Use pip install:**
 
-Keras
+keras
 
-Tensorflow
+tensorflow
 
 youtube-dl
 

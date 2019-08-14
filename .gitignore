@@ -7,6 +7,7 @@ avspeech_train.csv
 
 # Ignore downloaded AVSpeech data also
 *.wav
+*.wav*
 *.mp4
 *.jpg
 
@@ -16,3 +17,7 @@ valid_frame.txt
 *.hdf5
 *.npy
 data/audio/AV_model_database/*
+output_wavs/*
+
+# Ignore IDE related files
+.idea/*
