@@ -23,6 +23,10 @@ from datetime import datetime
 PRINT_DATA = False
 DISPLAY_GRAPHS = False
 
+# Data transformation/processing
+NORMALISE_DATA = False
+POWER_ENCODE = False
+
 # Use float32 format for dataset ndarrays
 USE_FLOAT32 = True
 
@@ -224,7 +228,7 @@ def wav_to_spectrogram(data):
 	
 	# TODO: test this
 	
-	# data = power_law_encode(data)
+	if POWER_ENCODE: data = power_law_encode(data)
 	# data = power_law_decode(data)
 	
 	if PRINT_DATA:
@@ -515,7 +519,8 @@ def convolution_model(num_speakers=2):
 	model.add(Dense(600, activation="relu"))
 	
 	# Output layer (i.e. complex masks)
-	outputs = Dense(257*2*num_speakers, activation="relu")
+	# outputs = Dense(257*2*num_speakers, activation="relu")
+	outputs = Dense(257*2*num_speakers, activation="sigmoid")				# TODO: check if this is more correct (based on the paper)
 	model.add(outputs)
 	outputs_complex_masks = Reshape((298, 257, 2, num_speakers))
 	model.add(outputs_complex_masks)
@@ -623,7 +628,7 @@ def main():
 		dataset_wav = generate_dataset(audio_wav)
 		dataset_train = dataset_to_spectrograms(dataset_wav)
 		dataset_train = dataset_labels_to_cRMs(dataset_train)
-		dataset_train = normalise_dataset(dataset_train)
+		if NORMALISE_DATA: dataset_train = normalise_dataset(dataset_train)
 		print("Finished converting dataset to spectrograms and cRMs\n")
 		
 		if USE_FLOAT32:
