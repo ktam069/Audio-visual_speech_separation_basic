@@ -25,7 +25,7 @@ DISPLAY_GRAPHS = False
 
 # Data transformation/processing
 NORMALISE_DATA = False
-POWER_ENCODE = False
+POWER_ENCODE = True
 
 # Use float32 format for dataset ndarrays
 USE_FLOAT32 = True
@@ -408,15 +408,16 @@ def train_model(x_train, y_train, num_speakers=2):
 	# x_train, y_train, x_test, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 	
 	# Create checkpoints when training model (save models to file)
-	filepath = path_to_models + "basic-ao-{epoch:02d}.hdf5"
-	# checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+	# filepath = path_to_models + "basic-ao-{epoch:02d}-{val_acc:.2f}.hdf5"
+	filepath = path_to_models + "basic-ao-{epoch:02d}-{val_loss:.2f}.hdf5"
+	checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
 	# checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
-	checkpoint = ModelCheckpoint(filepath, verbose=1, save_best_only=False)
+	# checkpoint = ModelCheckpoint(filepath, verbose=1, save_best_only=False)
 	callback_list = [checkpoint]
 	
 	# Train the model
 	# model.fit(x_train, y_train, batch_size=6, epochs=30, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
-	model.fit(x_train, y_train, batch_size=60, epochs=2, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
+	model.fit(x_train, y_train, batch_size=60, epochs=20, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
 
 def convolution_model(num_speakers=2):
 
@@ -571,8 +572,9 @@ def test_model(x_test, y_test):
 	
 	# print(x_test.shape, y_test.shape)
 	
-	loss = new_model.evaluate(x_test, y_test)
-	print("eval loss:", loss)
+	loss = model.evaluate(x_test, y_test)
+	for i in range(len(model.metrics_names)):
+		print(model.metrics_names[i]+":", loss[i])
 	
 	output_spects = new_model.predict(x_test)
 	# print(type(output_spects))
@@ -645,10 +647,10 @@ def main():
 	y_train = dataset_train[:,:,:,:,1:]
 	
 	# # Build and train the neural network
-	# train_model(x_train, y_train)
+	train_model(x_train, y_train)
 	
 	# Test model - temporarily just using the training data to test for errors
-	# test_model(x_train[0:1], y_train[0:1])
+	test_model(x_train[0:1], y_train[0:1])
 	
 if __name__ == '__main__':
 	# Create any missing folders for saving data and outputs
