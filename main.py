@@ -48,7 +48,6 @@ path_to_models = "./saved_models/"
 path_to_saved_datasets = "./dataset_npy/"
 path_to_outputs = "./output_wavs/"
 
-
 # ====================
 
 def load_data():
@@ -652,6 +651,7 @@ def main():
 	# Test model - temporarily just using the training data to test for errors
 	test_model(x_train[0:1], y_train[0:1])
 	
+
 if __name__ == '__main__':
 	# Create any missing folders for saving data and outputs
 	if not os.path.exists(path_to_models):

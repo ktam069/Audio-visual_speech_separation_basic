@@ -9,29 +9,37 @@ To run this project fully, the following libraries and tools are required.
 
 **Use pip install:**
 
-keras
+* keras
 
-tensorflow
+* tensorflow
 
-youtube-dl
+* librosa
 
-pytest
+* youtube-dl
 
-sox
+* pytest
+
+* sox
+
+To install all the required libraries listed above, run the following command from the *ai_project* folder:
+
+```
+python -m pip install -r requirements.txt
+```
 
 **Install manually:**
 
-ffmpeg
+* ffmpeg
 
-cmake
+* cmake
 
 ### Ensure that the following are in your system path environment variables:
 
-...\Python\Scripts
+* ...\Python\Scripts
 
-...\ffmpeg\bin
+* ...\ffmpeg\bin
 
-...\sox
+* ...\sox
 
 # Instructions for Running
 
@@ -47,9 +55,9 @@ After having downloaded a range of data into the data folder, specify the range 
 
 Run the following to train and/or test the model:
 
-```
+```python
 python main.py
 ```
 
-(To be completed.)
+By default, the program will pre-process the dataset, train the model, and proceed to test the trained model.
 

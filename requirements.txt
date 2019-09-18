@@ -3,3 +3,6 @@ matplotlib
 librosa
 tensorflow
 keras
+youtube-dl
+pytest
+sox
