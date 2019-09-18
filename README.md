@@ -1,9 +1,15 @@
-# Description
-Basic version of the implementation for Part IV Project #80. Commands are adpated to be run on windows.
+# Part IV Project 80 - Audio-visual Analysis for Portable Devices
 
-# Dependencies
+## Description
+Basic version of the implementation for Part IV Project #80 (2019). Commands are adpated to be run on windows.
+
+## Dependencies
 
 To run this project fully, the following libraries and tools are required.
+
+### Language and version:
+
+Python 3.6
 
 ### Download and install:
 
@@ -33,7 +39,7 @@ python -m pip install -r requirements.txt
 
 * cmake
 
-### Ensure that the following are in your system path environment variables:
+**Ensure that the following are in your system path environment variables:**
 
 * ...\Python\Scripts
 
@@ -41,15 +47,15 @@ python -m pip install -r requirements.txt
 
 * ...\sox
 
-# Instructions for Running
+## Instructions for Running
 
-## Dataset
+### Dataset
 
 Follow the instructions on the [README](https://github.com/ktam069/Audio-visual_speech_separation_basic/tree/master/data) in the data folder.
 
 The code used for downloading the data is taken from another [repository](https://github.com/bill9800/speech_separation).
 
-## Running the Model
+### Running the Model
 
 After having downloaded a range of data into the data folder, specify the range of data to use in the main.py script (by changing the START_ID and END_ID).
 
