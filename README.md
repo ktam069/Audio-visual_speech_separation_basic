@@ -43,5 +43,13 @@ The code used for downloading the data is taken from another [repository](https:
 
 ## Running the Model
 
+After having downloaded a range of data into the data folder, specify the range of data to use in the main.py script (by changing the START_ID and END_ID).
+
+Run the following to train and/or test the model:
+
+```
+python main.py
+```
+
 (To be completed.)
 
