@@ -418,8 +418,8 @@ def train_model(x_train, y_train, num_speakers=2):
 	
 	# Train the model
 	# model.fit(x_train, y_train, batch_size=6, epochs=30, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
-	model.fit(x_train, y_train, batch_size=60, epochs=1, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
-	# model.fit(x_train, y_train, batch_size=60, epochs=1, callbacks=callback_list, verbose=1, validation_split=0.1)		# TODO: adjust the arguments used
+	# model.fit(x_train, y_train, batch_size=6, epochs=20, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
+	model.fit(x_train, y_train, batch_size=6, epochs=20, callbacks=callback_list, verbose=1, validation_split=0.02)		# TODO: adjust the arguments used
 
 def convolution_model(num_speakers=2):
 
