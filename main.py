@@ -406,17 +406,20 @@ def train_model(x_train, y_train, num_speakers=2):
 	pass
 	# x_train, y_train, x_test, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 	
+	t = datetime.now().strftime("%d_%m_%H%M%S")
+	
 	# Create checkpoints when training model (save models to file)
-	# filepath = path_to_models + "basic-ao-{epoch:02d}-{val_acc:.2f}.hdf5"
-	filepath = path_to_models + "basic-ao-{epoch:02d}-{val_loss:.2f}.hdf5"
-	checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
-	# checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
+	filepath = path_to_models + "basic-ao-%s-{epoch:02d}-{loss:.2f}.hdf5"%t
+	checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='auto')
+	# filepath = path_to_models + "basic-ao-%s-{epoch:02d}-{val_loss:.2f}.hdf5"%t
+	# checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
 	# checkpoint = ModelCheckpoint(filepath, verbose=1, save_best_only=False)
 	callback_list = [checkpoint]
 	
 	# Train the model
 	# model.fit(x_train, y_train, batch_size=6, epochs=30, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
-	model.fit(x_train, y_train, batch_size=60, epochs=20, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
+	model.fit(x_train, y_train, batch_size=60, epochs=1, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
+	# model.fit(x_train, y_train, batch_size=60, epochs=1, callbacks=callback_list, verbose=1, validation_split=0.1)		# TODO: adjust the arguments used
 
 def convolution_model(num_speakers=2):
 
@@ -429,7 +432,7 @@ def convolution_model(num_speakers=2):
 	# model.add(inputs)
 	
 	# Convolution layers
-	conv1 = Conv2D(96, kernel_size=(1,7), padding='same', dilation_rate=(1,1), input_shape=(298, 257, 2))
+	conv1 = Conv2D(96, kernel_size=(1,7), padding='same', dilation_rate=(1,1), input_shape=(298, 257, 2), name="input_layer")
 	model.add(conv1)
 	model.add(BatchNormalization())
 	model.add(Activation("relu"))
@@ -522,7 +525,7 @@ def convolution_model(num_speakers=2):
 	# outputs = Dense(257*2*num_speakers, activation="relu")
 	outputs = Dense(257*2*num_speakers, activation="sigmoid")				# TODO: check if this is more correct (based on the paper)
 	model.add(outputs)
-	outputs_complex_masks = Reshape((298, 257, 2, num_speakers))
+	outputs_complex_masks = Reshape((298, 257, 2, num_speakers), name="output_layer")
 	model.add(outputs_complex_masks)
 	
 	# Print the output shapes of each model layer
@@ -557,7 +560,7 @@ def test_model(x_test, y_test):
 	# TODO / Temp: Save model for mobile append
 	t = datetime.now().strftime("%d_%m_%H%M%S")
 	model_save_path = path_to_models + "saved_model_basic_%s.h5"%t
-	# model.save(model_save_path)
+	model.save(model_save_path)
 	
 	# TODO / Temp: Checking that the model loads
 	# new_model = load_model(model_save_path)
@@ -589,25 +592,28 @@ def test_model(x_test, y_test):
 	p1_spect = cRM_decode(output_spects[:,:,:,0], x_test)[0]
 	p2_spect = cRM_decode(output_spects[:,:,:,1], x_test)[0]
 	
-	# Display mixed input and predicted outputs
-	visualise_model_output([p1_spect, p2_spect], mixed_spect)
+	if DISPLAY_GRAPHS:
+		# Display mixed input and predicted outputs
+		visualise_model_output([p1_spect, p2_spect], mixed_spect)
 	
 	# Display actual clean spectrograms
 	p1_spect_actual = cRM_decode(y_test[:,:,:,0], x_test)[0]
 	p2_spect_actual = cRM_decode(y_test[:,:,:,1], x_test)[0]
 	
-	# Display mixed input and original clean audio wavs
-	visualise_model_output([p1_spect_actual, p2_spect_actual], mixed_spect)
+	if DISPLAY_GRAPHS:
+		# Display mixed input and original clean audio wavs
+		visualise_model_output([p1_spect_actual, p2_spect_actual], mixed_spect)
 	
 	# Display cRMs
-	print("Displaying cRMs")
-	p1_cRM = output_spects[0][:,:,:,0]
-	p2_cRM = output_spects[0][:,:,:,1]
-	p1_cRM_actual = y_test[0][:,:,:,0]
-	p2_cRM_actual = y_test[0][:,:,:,1]
-	visualise_model_output([p1_cRM, p2_cRM], mixed_spect)
-	visualise_model_output([p1_cRM_actual, p2_cRM_actual], mixed_spect)
-	
+	if DISPLAY_GRAPHS:
+		print("Displaying cRMs")
+		p1_cRM = output_spects[0][:,:,:,0]
+		p2_cRM = output_spects[0][:,:,:,1]
+		p1_cRM_actual = y_test[0][:,:,:,0]
+		p2_cRM_actual = y_test[0][:,:,:,1]
+		visualise_model_output([p1_cRM, p2_cRM], mixed_spect)
+		visualise_model_output([p1_cRM_actual, p2_cRM_actual], mixed_spect)
+		
 	# ==================================================================================
 	
 	# Convert separated speech spectrograms to wav files
@@ -647,6 +653,7 @@ def main():
 	
 	# # Build and train the neural network
 	train_model(x_train, y_train)
+	# train_model(x_train[:1], y_train[:1])
 	
 	# Test model - temporarily just using the training data to test for errors
 	test_model(x_train[0:1], y_train[0:1])

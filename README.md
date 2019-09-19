@@ -1,4 +1,4 @@
-# Part IV Project 80 - Audio-visual Analysis for Portable Devices
+# Part IV Project 80 - Audio-visual Analysis
 
 ## Description
 Basic version of the implementation for Part IV Project #80 (2019). Commands are adpated to be run on windows.
