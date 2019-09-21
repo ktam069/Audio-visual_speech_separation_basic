@@ -7,10 +7,10 @@ import librosa
 from scipy.io import wavfile
 
 import tensorflow as tf
-from keras.models import Sequential, load_model
-from keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional
-from keras.layers import BatchNormalization, Activation, Flatten, TimeDistributed, Reshape
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional
+from tensorflow.keras.layers import BatchNormalization, Activation, Flatten, TimeDistributed, Reshape
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 import os
 # import sys
@@ -224,11 +224,8 @@ def wav_to_spectrogram(data):
 	data = convert_to_scalars_ndarray(data)
 	
 	# == Power Law Compression ==
-	
-	# TODO: test this
-	
+		
 	if POWER_ENCODE: data = power_law_encode(data)
-	# data = power_law_decode(data)
 	
 	if PRINT_DATA:
 		print("\nData after conversion:")
@@ -341,6 +338,8 @@ def cRM_decode(cRM_output, Y_spect):
 	
 	output_spect[:,:,:,0] = output_spect_re
 	output_spect[:,:,:,1] = output_spect_im
+	
+	# if POWER_ENCODE: output_spect = power_law_decode(output_spect)
 		
 	return output_spect
 	
@@ -409,17 +408,17 @@ def train_model(x_train, y_train, num_speakers=2):
 	t = datetime.now().strftime("%d_%m_%H%M%S")
 	
 	# Create checkpoints when training model (save models to file)
-	filepath = path_to_models + "basic-ao-%s-{epoch:02d}-{loss:.2f}.hdf5"%t
-	checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='auto')
-	# filepath = path_to_models + "basic-ao-%s-{epoch:02d}-{val_loss:.2f}.hdf5"%t
-	# checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+	# filepath = path_to_models + "basic-ao-%s-{epoch:02d}-{loss:.2f}.h5"%t
+	# checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='auto')
+	filepath = path_to_models + "basic-ao-%s-{epoch:02d}-{val_loss:.2f}.h5"%t
+	checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
 	# checkpoint = ModelCheckpoint(filepath, verbose=1, save_best_only=False)
 	callback_list = [checkpoint]
 	
 	# Train the model
 	# model.fit(x_train, y_train, batch_size=6, epochs=30, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
 	# model.fit(x_train, y_train, batch_size=6, epochs=20, callbacks=callback_list, verbose=1)		# TODO: adjust the arguments used
-	model.fit(x_train, y_train, batch_size=6, epochs=20, callbacks=callback_list, verbose=1, validation_split=0.02)		# TODO: adjust the arguments used
+	model.fit(x_train, y_train, batch_size=6, epochs=20, callbacks=callback_list, verbose=1, validation_split=0.1)		# TODO: adjust the arguments used
 
 def convolution_model(num_speakers=2):
 
@@ -592,37 +591,39 @@ def test_model(x_test, y_test):
 	p1_spect = cRM_decode(output_spects[:,:,:,0], x_test)[0]
 	p2_spect = cRM_decode(output_spects[:,:,:,1], x_test)[0]
 	
-	if DISPLAY_GRAPHS:
-		# Display mixed input and predicted outputs
-		visualise_model_output([p1_spect, p2_spect], mixed_spect)
-	
-	# Display actual clean spectrograms
+	# Actual clean spectrograms
 	p1_spect_actual = cRM_decode(y_test[:,:,:,0], x_test)[0]
 	p2_spect_actual = cRM_decode(y_test[:,:,:,1], x_test)[0]
 	
 	if DISPLAY_GRAPHS:
+		# Display mixed input and predicted outputs
+		print("Displaying decoded input and output spectrograms")
+		visualise_model_output([p1_spect, p2_spect], mixed_spect)
+		
 		# Display mixed input and original clean audio wavs
+		print("Displaying original/clean decoded input and output spectrograms")
 		visualise_model_output([p1_spect_actual, p2_spect_actual], mixed_spect)
 	
-	# Display cRMs
+	# Display cRMs for comparison
 	if DISPLAY_GRAPHS:
-		print("Displaying cRMs")
 		p1_cRM = output_spects[0][:,:,:,0]
 		p2_cRM = output_spects[0][:,:,:,1]
 		p1_cRM_actual = y_test[0][:,:,:,0]
 		p2_cRM_actual = y_test[0][:,:,:,1]
+		print("Displaying output cRMs (undecoded outputs)")
 		visualise_model_output([p1_cRM, p2_cRM], mixed_spect)
+		print("Displaying clean cRMs (undecoded outputs)")
 		visualise_model_output([p1_cRM_actual, p2_cRM_actual], mixed_spect)
 		
 	# ==================================================================================
-	
+		
 	# Convert separated speech spectrograms to wav files
 	# output_spects = spectrogram_to_wav(output_spects)
 	
 	# wavfile.write(path_to_outputs+"output_file_%s_p1.wav"%t, SAMPLING_RATE, p1_spect)
 	# wavfile.write(path_to_outputs+"output_file_%s_p2.wav"%t, SAMPLING_RATE, p2_spect)
 	
-	# print("Output file saved")
+	# print("Output wav files saved")
 	
 
 def main():
@@ -652,10 +653,10 @@ def main():
 	y_train = dataset_train[:,:,:,:,1:]
 	
 	# # Build and train the neural network
-	train_model(x_train, y_train)
+	# train_model(x_train, y_train)
 	# train_model(x_train[:1], y_train[:1])
 	
-	# Test model - temporarily just using the training data to test for errors
+	# Test model - temporarily just using the training data to test for errors (TODO)
 	test_model(x_train[0:1], y_train[0:1])
 	
 
