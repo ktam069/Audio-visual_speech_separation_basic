@@ -66,7 +66,7 @@ x_visual = np.random.rand(len(x_train), 75, 1, 1024)
 model = load_model("saved_model_ablation__26_09_232505.h5", custom_objects={'tf': tf})
 
 times = []
-num_tests = 1
+num_tests = 30
 
 for i in range(num_tests):
 	'''Predict data'''

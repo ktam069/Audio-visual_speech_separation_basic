@@ -126,53 +126,59 @@ def convolution_model(num_speakers=2):
 
 	# == Visual convolution layers ==
 	
-	# Input layer for functional model
-	# TODO: check the correctness of the input layer
-	visual_inputs = Input(shape=(75, 1, 1024))
+	visual_inputs_list = []
+	visual_outputs_list = []
 	
-	# Convolution layers
-	model = Conv2D(256, kernel_size=(7,1), padding='same', dilation_rate=(1,1))(visual_inputs)
-	model = BatchNormalization()(model)
-	model = Activation("relu")(model)
+	for i in range(num_speakers):
+		# Input layer for functional model
+		# TODO: check the correctness of the input layer
+		visual_inputs = Input(shape=(75, 1, 1024))
+		
+		# Convolution layers
+		model = Conv2D(256, kernel_size=(7,1), padding='same', dilation_rate=(1,1))(visual_inputs)
+		model = BatchNormalization()(model)
+		model = Activation("relu")(model)
+		
+		model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(1,1))(model)
+		model = BatchNormalization()(model)
+		model = Activation("relu")(model)
+		
+		model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(2,1))(model)
+		model = BatchNormalization()(model)
+		model = Activation("relu")(model)
+		
+		model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(4,1))(model)
+		model = BatchNormalization()(model)
+		model = Activation("relu")(model)
+		
+		model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(8,1))(model)
+		model = BatchNormalization()(model)
+		model = Activation("relu")(model)
+		
+		model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(16,1))(model)
+		model = BatchNormalization()(model)
+		model = Activation("relu")(model)
+		
+		model = Reshape((75, 256, 1))(model)
+		
+		# TODO - upsampling code taken from other repo
+		def UpSampling2DBilinear(size):
+			return Lambda(lambda x: tf.image.resize_bilinear(x, size, align_corners=True))
+		
+		model = UpSampling2DBilinear((298, 256))(model)
+		
+		visual_outputs = Reshape((298, 256))(model)
+		
+		visual_model = Model(visual_inputs, visual_outputs)
+		
+		visual_model.summary()
 	
-	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(1,1))(model)
-	model = BatchNormalization()(model)
-	model = Activation("relu")(model)
-	
-	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(2,1))(model)
-	model = BatchNormalization()(model)
-	model = Activation("relu")(model)
-	
-	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(4,1))(model)
-	model = BatchNormalization()(model)
-	model = Activation("relu")(model)
-	
-	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(8,1))(model)
-	model = BatchNormalization()(model)
-	model = Activation("relu")(model)
-	
-	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(16,1))(model)
-	model = BatchNormalization()(model)
-	model = Activation("relu")(model)
-	
-	model = Reshape((75, 256, 1))(model)
-	
-	# TODO
-	# Taken from other repo
-	def UpSampling2DBilinear(size):
-		return Lambda(lambda x: tf.image.resize_bilinear(x, size, align_corners=True))
-	
-	model = UpSampling2DBilinear((298, 256))(model)
-	
-	visual_outputs = Reshape((298, 256))(model)
-	
-	visual_model = Model(visual_inputs, visual_outputs)
-	
-	visual_model.summary()
+		visual_inputs_list.append(visual_inputs)
+		visual_outputs_list.append(visual_outputs)
 	
 	# == AV fused neural network ==
-		
-	fused_model = concatenate([audio_outputs, visual_outputs, visual_outputs], axis=2)
+	
+	fused_model = concatenate([audio_outputs]+visual_outputs_list, axis=2)
 	
 	# # TEMP
 	# fused_model = audio_model
@@ -194,7 +200,7 @@ def convolution_model(num_speakers=2):
 	fused_model = Dense(257*2*num_speakers, activation="sigmoid")(fused_model)				# TODO: check if this is more correct (based on the paper)
 	outputs_complex_masks = Reshape((298, 257, 2, num_speakers), name="output_layer")(fused_model)
 	
-	av_model = Model(inputs=[audio_inputs, visual_inputs], outputs=outputs_complex_masks)
+	av_model = Model(inputs=[audio_inputs]+visual_inputs_list, outputs=outputs_complex_masks)
 	
 	model = av_model
 	
@@ -206,7 +212,7 @@ def convolution_model(num_speakers=2):
 		print(layer.output_shape, "\t", name)
 	
 	# Alternatively, print the default keras model summary
-	print(model.summary())
+	model.summary()
 	
 	# Compile the model before training
 	model.compile(optimizer='adam', loss='mse', metrics=['accuracy'])
@@ -233,10 +239,6 @@ if __name__ == '__main__':
 	# Create any missing folders for saving data and outputs
 	if not os.path.exists(path_to_models):
 		os.mkdir(path_to_models)
-	if not os.path.exists(path_to_saved_datasets):
-		os.mkdir(path_to_saved_datasets)
-	if not os.path.exists(path_to_outputs):
-		os.mkdir(path_to_outputs)
 	
 	# Run AV speech separation program
 	main()
