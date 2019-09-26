@@ -654,7 +654,8 @@ def main():
 	
 	# # Build and train the neural network
 	# train_model(x_train, y_train)
-	# train_model(x_train[:1], y_train[:1])
+	# train_model(x_train[:2], y_train[:2])
+	print(x_train.shape)
 	
 	# Test model - temporarily just using the training data to test for errors (TODO)
 	test_model(x_train[0:1], y_train[0:1])
