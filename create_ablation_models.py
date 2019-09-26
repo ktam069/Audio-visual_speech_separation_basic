@@ -7,10 +7,12 @@ import librosa
 from scipy.io import wavfile
 
 import tensorflow as tf
-from tensorflow.keras.models import Sequential, load_model, Model
-from tensorflow.keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional, concatenate
-from tensorflow.keras.layers import BatchNormalization, Activation, Flatten, TimeDistributed, Reshape
-from tensorflow.keras.callbacks import ModelCheckpoint
+from keras.models import Sequential, load_model, Model
+from keras.layers import Input, Dense, Conv2D, LSTM, Bidirectional
+from keras.layers import BatchNormalization, Activation, Flatten, TimeDistributed, Reshape
+from keras.callbacks import ModelCheckpoint
+from keras.layers import concatenate
+from keras.layers import Lambda
 
 import os
 # import sys
@@ -121,24 +123,67 @@ def convolution_model(num_speakers=2):
 	audio_outputs = Reshape((298, 8*257))(model)
 	
 	audio_model = Model(audio_inputs, audio_outputs)
+
+	# == Visual convolution layers ==
+	
+	# Input layer for functional model
+	# TODO: check the correctness of the input layer
+	visual_inputs = Input(shape=(75, 1, 1024))
+	
+	# Convolution layers
+	model = Conv2D(256, kernel_size=(7,1), padding='same', dilation_rate=(1,1))(visual_inputs)
+	model = BatchNormalization()(model)
+	model = Activation("relu")(model)
+	
+	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(1,1))(model)
+	model = BatchNormalization()(model)
+	model = Activation("relu")(model)
+	
+	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(2,1))(model)
+	model = BatchNormalization()(model)
+	model = Activation("relu")(model)
+	
+	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(4,1))(model)
+	model = BatchNormalization()(model)
+	model = Activation("relu")(model)
+	
+	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(8,1))(model)
+	model = BatchNormalization()(model)
+	model = Activation("relu")(model)
+	
+	model = Conv2D(256, kernel_size=(5,1), padding='same', dilation_rate=(16,1))(model)
+	model = BatchNormalization()(model)
+	model = Activation("relu")(model)
+	
+	model = Reshape((75, 256, 1))(model)
+	
+	# TODO
+	# Taken from other repo
+	def UpSampling2DBilinear(size):
+		return Lambda(lambda x: tf.image.resize_bilinear(x, size, align_corners=True))
+	
+	model = UpSampling2DBilinear((298, 256))(model)
+	
+	visual_outputs = Reshape((298, 256))(model)
+	
+	visual_model = Model(visual_inputs, visual_outputs)
+	
+	visual_model.summary()
 	
 	# == AV fused neural network ==
+		
+	fused_model = concatenate([audio_outputs, visual_outputs, visual_outputs], axis=2)
 	
-	num_speakers = 2
-	
-	# fused_model = concatenate([audio_model, visual_model])
-	
-	
-	# TEMP
-	fused_model = audio_model
+	# # TEMP
+	# fused_model = audio_model
 	
 	# AV fusion step(s)
 	fused_model = TimeDistributed(Flatten())(fused_model)
 	
 	# BLSTM
 	new_matrix_length = 400
-	fused_model = Bidirectional(LSTM(new_matrix_length//2, return_sequences=True, input_shape=(298, 257*8)))(fused_model)
-	# fused_model = Bidirectional(LSTM(new_matrix_length//2, return_sequences=True, input_shape=(298, 257*8 + 256*num_speakers)))(fused_model)
+	# fused_model = Bidirectional(LSTM(new_matrix_length//2, return_sequences=True, input_shape=(298, 257*8)))(fused_model)
+	fused_model = Bidirectional(LSTM(new_matrix_length//2, return_sequences=True, input_shape=(298, 257*8 + 256*num_speakers)))(fused_model)
 	
 	# Fully connected layers
 	fused_model = Dense(600, activation="relu")(fused_model)
@@ -149,7 +194,9 @@ def convolution_model(num_speakers=2):
 	fused_model = Dense(257*2*num_speakers, activation="sigmoid")(fused_model)				# TODO: check if this is more correct (based on the paper)
 	outputs_complex_masks = Reshape((298, 257, 2, num_speakers), name="output_layer")(fused_model)
 	
-	av_model = Model(inputs=[], outputs=outputs_complex_masks)
+	av_model = Model(inputs=[audio_inputs, visual_inputs], outputs=outputs_complex_masks)
+	
+	model = av_model
 	
 	# Print the output shapes of each model layer
 	for layer in model.layers:
