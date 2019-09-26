@@ -57,16 +57,21 @@ dataset_train = np.load(path_to_saved_datasets+"dataset_train_0-20.npy")
 x_train = dataset_train[:,:,:,:,0 ]
 y_train = dataset_train[:,:,:,:,1:]
 
-model = load_model("saved_model_basic_22_09_045241.h5")
+x_visual = np.random.rand(len(x_train), 75, 1, 1024)
 
+'''Loading models with custom Lambda layers'''
+'''https://stackoverflow.com/questions/54347963/tf-is-not-defined-on-load-model-using-lambda/54348035'''
+
+# model = load_model("saved_model_ablation__26_09_232505.h5")
+model = load_model("saved_model_ablation__26_09_232505.h5", custom_objects={'tf': tf})
 
 times = []
-num_tests = 30
+num_tests = 1
 
 for i in range(num_tests):
 	'''Predict data'''
 	start_time = time.time()
-	model.predict(x_train[i:i+1])
+	model.predict([x_train[i:i+1], x_visual[i:i+1]])
 	end_time = time.time()
 	runtime = end_time-start_time
 	times.append(runtime)
