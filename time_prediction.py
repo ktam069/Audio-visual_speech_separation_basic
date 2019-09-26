@@ -71,7 +71,8 @@ num_tests = 1
 for i in range(num_tests):
 	'''Predict data'''
 	start_time = time.time()
-	model.predict([x_train[i:i+1], x_visual[i:i+1]])
+	# model.predict([x_train[i:i+1], x_visual[i:i+1]])
+	model.predict([x_train[i:i+1], x_visual[i:i+1], x_visual[i:i+1]])
 	end_time = time.time()
 	runtime = end_time-start_time
 	times.append(runtime)
