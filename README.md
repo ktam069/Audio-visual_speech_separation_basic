@@ -53,7 +53,7 @@ python -m pip install -r requirements.txt
 
 Follow the instructions on the [README](https://github.com/ktam069/Audio-visual_speech_separation_basic/tree/master/data) in the data folder.
 
-The code used for downloading the data is taken from another [repository](https://github.com/bill9800/speech_separation).
+The code used for downloading the data was adapted from another [repository](https://github.com/bill9800/speech_separation).
 
 ### Running the Model
 
@@ -67,3 +67,12 @@ python main.py
 
 By default, the program will pre-process the dataset, train the model, and proceed to test the trained model.
 
+### Additional Scripts
+
+A few other scripts are in the repository mainly for visualisation and testing purposes.
+
+* "display_specs.py" can be used to visualise the mixing of audio spectrograms to generate the training data. It can also be used to compare output (clean) spectrograms to the inputs.
+
+* "time_prediction.py" is a basic script that times the model running locall on a computer. This was used to generate the baseline time when running the model on a desktop and laptop.
+
+* "stft_test.py" was used to compare the effectiveness and speed of preprocessing, with the focus on the STFT.
