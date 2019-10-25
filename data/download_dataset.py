@@ -16,8 +16,8 @@ from frame_inspector import frame_inspect
 # ===== Settings =====
 
 # Range of data to download from AVSpeech (excludes end_id - usually...)
-start_id = 201
-end_id = 501
+start_id = 501
+end_id = 1001
 
 # Whether to download from the training set or the test set
 dl_from_training = True
