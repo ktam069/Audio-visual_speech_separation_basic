@@ -1,12 +1,12 @@
-# Instructions for generating data
+# Instructions for downloading data
 
-Taken (and adapted) from: https://github.com/bill9800/speech_separation/tree/master/data
+The code was adapted from: https://github.com/bill9800/speech_separation/tree/master/data
 
-Below are the steps for generating training and testing data.  There are several parameters to change in order to match different purpose. 
+The instructions below detail the steps used to download the training and testing data from the AVSpeech dataset.
 
 ## Step 1 - Get a list of the AVSpeech files
 
-1. Get into **data/audio/catalog** and download **avspeech_train.csv** and **avspeech_test.csv** from [AVspeech](https://looking-to-listen.github.io/avspeech/download.html)
+1. Go into **data/audio/catalog** and download **avspeech_train.csv** and **avspeech_test.csv** from [AVSpeech](https://looking-to-listen.github.io/avspeech/download.html)
 2. Add **link,start_time,end_time,pos_x,pos_y** to the head of the csv files. (for pandas) 
 
 ## Step 2 - Download audio and video data
@@ -23,7 +23,7 @@ Below are the steps for generating training and testing data.  There are several
 
 4. The process will also delete the series of frames which are not valid, such as wrong detection or missing frames. Valid frame series are listed in **data/video/valid_frame.txt**.
 
-# (Original instructions)
+# More detailed steps
 
 (Note that download_dataset.py does steps 2-5 listed below.)
 
@@ -118,21 +118,4 @@ Following are the steps to generate training and testing data.  There are severa
 3. Open **model/pretrain_model/pretrain_load_test.py**
 4. Change the parameters for different path. 
 5. Run it. Face Embedding numpy files will store in **face1022_emb**
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
