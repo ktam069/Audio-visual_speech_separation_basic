@@ -75,4 +75,6 @@ A few other scripts are in the repository mainly for visualisation and testing p
 
 * "time_prediction.py" is a basic script that times the model running locall on a computer. This was used to generate the baseline time when running the model on a desktop and laptop.
 
+* "create_ablation_models.py" was used to create the ablation model H5 files that were used in the ablation study.
+
 * "stft_test.py" was used to compare the effectiveness and speed of preprocessing, with the focus on the STFT.
